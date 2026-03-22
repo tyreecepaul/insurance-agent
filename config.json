@@ -1,0 +1,12 @@
+{
+  "CHROMA_PERSIST_DIR": "./chroma_db",
+  "TEXT_EMBED_MODEL": "all-MiniLM-L6-v2",
+  "CLIP_MODEL": "ViT-B-32",
+  "CLIP_PRETRAINED": "openai",
+  "TOP_K": 5,
+  "CHUNK_SIZE": 500,
+  "CHUNK_OVERLAP": 50,
+  "POLICY_DIR": "data/policy_docs",
+  "DAMAGE_DIR": "data/damage_photos",
+  "CLAIMS_FILE": "data/claims_data/claims.json"
+}
