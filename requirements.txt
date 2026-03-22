@@ -1,0 +1,32 @@
+# agent framework
+langgraph>=0.2.0
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-ollama>=0.1.0          # swap for langchain-ollama if running locally
+
+# vector store
+chromadb>=0.5.0
+
+# text embeddings
+sentence-transformers>=3.0.0
+rank-bm25>=0.2.2                 # BM25 hybrid retrieval
+
+# image embedding
+open-clip-torch>=2.24.0          # CLIP image embeddings
+transformers>=4.40.0             # BLIP-2 captioning
+Pillow>=10.0.0                   # image loading
+torch>=2.2.0                     # required by both CLIP and BLIP-2
+
+# pdf
+pymupdf>=1.24.0                  # fitz — fast PDF text + image extraction
+
+# util
+python-dotenv>=1.0.0             # .env for API keys
+tqdm>=4.66.0                     # progress bars during indexing
+numpy>=1.26.0
+pydantic>=2.0.0                  # data validation for claim records
+
+# eval
+langchain-ollama>=0.1.0          # LLM-as-judge calls
+pyspark>=3.5.0                   # results aggregation (local mode — no cluster needed)
+mlflow>=2.13.0                   # experiment tracking + UI at localhost:5000
