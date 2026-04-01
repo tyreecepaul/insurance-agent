@@ -3,6 +3,7 @@ import os
 import argparse
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="langchain_core")
+warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 
 # add source to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))

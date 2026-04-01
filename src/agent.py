@@ -27,6 +27,9 @@ from tools import search_policy, search_damage, search_claims, RetrievalResult
 
 load_dotenv()
 
+import warnings
+warnings.filterwarnings("ignore", message=".*position_ids.*")
+
 # LLM
 LLM_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 llm = ChatOllama(
@@ -331,7 +334,7 @@ def run_cli():
             user_input = input("You: ").strip()
             if not user_input:
                 continue
-            if user_input.lower() in ("quit", "exit"):
+            if user_input.lower() in ("quit", "q", "exit"):
                 break
             if user_input.lower().startswith("image "):
                 state["image_path"] = user_input[6:].strip()

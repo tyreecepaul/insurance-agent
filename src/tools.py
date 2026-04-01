@@ -21,6 +21,9 @@ from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
 from dotenv import load_dotenv
 
+import warnings
+warnings.filterwarnings("ignore", message=".*position_ids.*")
+
 load_dotenv()
 
 # Load configuration from config.json
