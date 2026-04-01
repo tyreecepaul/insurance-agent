@@ -1,6 +1,8 @@
 import sys
 import os
 import argparse
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="langchain_core")
 
 # add source to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))

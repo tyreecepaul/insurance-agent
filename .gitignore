@@ -1,2 +1,7 @@
 chroma_db/
 data/
+
+src/__pycache__
+src/test_tools.py
+
+.env
