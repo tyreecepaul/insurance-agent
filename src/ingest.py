@@ -231,9 +231,12 @@ def generate_caption(image_path: Path) -> str:
     try:
         from transformers import Blip2Processor, Blip2ForConditionalGeneration
  
-        processor = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
+        processor = Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-sm")
         blip_model = Blip2ForConditionalGeneration.from_pretrained(
-            "Salesforce/blip2-opt-2.7b", torch_dtype=torch.float16
+            "Salesforce/blip2-flan-t5-sm",
+            torch_dtype=torch.float16,
+            device_map="auto",              # Auto-distribute across available memory
+            load_in_8bit=True,              # Quantize to 8-bit
         )
         device = "cuda" if torch.cuda.is_available() else "cpu"
         blip_model = blip_model.to(device)
@@ -322,6 +325,10 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
  
         # Generate caption
         caption = generate_caption(img_path)
+        
+        # Clear GPU cache after each image to prevent memory fragmentation
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
  
         # Infer damage type from filename convention:
         # e.g. "car_rear_dent_01.jpg" → damage_type="car", severity="medium"
