@@ -137,10 +137,72 @@ pytest tests/unit/test_ingest_utils.py::TestChunkText::test_chunk_text_basic -v 
 
 ## CI/CD Integration
 
-Tests are ready for GitHub Actions CI. See `.github/workflows/tests.yml` (when created) for automated test runs on:
-- Every push to main/develop
-- Every pull request
-- Nightly scheduled runs
+Tests are automatically run on GitHub Actions on every push and pull request.
+
+### Workflow Details
+
+The `.github/workflows/tests.yml` workflow:
+- Runs on Python 3.11, 3.12, and 3.14 (matrix strategy)
+- Triggers on: push to main/develop branches, all pull requests
+- Execution time: ~35-40 seconds total (parallel matrix)
+- Jobs per run:
+  1. **Unit tests** (~5-10s): `pytest tests/unit -m unit`
+  2. **Integration tests** (~15-25s): `pytest tests/integration -m integration`
+  3. **Coverage report** (~10s): `pytest tests/ --cov=src --cov-report=xml`
+  4. **Codecov upload** (optional, non-blocking)
+
+### View Results
+
+1. Go to repo → "Actions" tab
+2. Click on a workflow run
+3. View logs for each job (Setup, Install, Unit Tests, Integration Tests, etc.)
+4. Download coverage report artifact (30-day retention)
+
+### Coverage Artifacts
+
+After successful workflow runs, an HTML coverage report is available:
+1. Click workflow run → "Artifacts" section
+2. Download `coverage-report-<number>.zip`
+3. Extract and open `htmlcov/index.html` in browser
+4. View detailed coverage by file and function
+
+### Local Testing Before Push
+
+Test locally before pushing to catch failures early:
+```bash
+# Run exactly what CI will run
+pytest tests/unit -m unit -v
+pytest tests/integration -m integration -v
+
+# Generate coverage report locally
+pytest tests/ --cov=src --cov-report=html
+open htmlcov/index.html
+```
+
+### Troubleshooting Failed Runs
+
+**PR blocked by test failure:**
+1. Click "Actions" on PR
+2. View failed job logs
+3. Look for error in:
+   - Unit test output (fast feedback)
+   - Integration test output (real/mocked services)
+   - Coverage report (if coverage dropped)
+4. Fix locally, push again (CI runs automatically)
+
+**Common issues:**
+- `ModuleNotFoundError: No module named 'src'` → missing `pip install -e .`
+- `Java not found` in Spark tests → only in local testing (CI has Java installed)
+- `Connection refused` to Ollama → integration tests mock this, no real Ollama needed
+
+### Branch Protection
+
+(Optional) Require tests to pass before merging:
+1. Go to repo Settings → Branches
+2. Add rule for "main" branch
+3. Enable "Require status checks to pass"
+4. Select "test" workflow checks
+5. Now CI must pass before PR merge
 
 ## Coverage Goals
 
