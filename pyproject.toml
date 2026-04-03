@@ -1,0 +1,52 @@
+[project]
+name = "insurance-agent"
+version = "0.1.0"
+description = "LangGraph-based insurance claims agent with vector RAG"
+requires-python = ">=3.10"
+readme = "README.md"
+
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain>=0.2.0",
+    "langchain-community>=0.2.0",
+    "langchain-ollama>=0.1.0",
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+    "rank-bm25>=0.2.2",
+    "open-clip-torch>=2.24.0",
+    "transformers>=4.40.0",
+    "Pillow>=10.0.0",
+    "torch>=2.2.0",
+    "pymupdf>=1.24.0",
+    "python-dotenv>=1.0.0",
+    "tqdm>=4.66.0",
+    "numpy>=1.26.0",
+    "pydantic>=2.0.0",
+    "pyspark>=3.5.0",
+    "mlflow>=2.13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-mock>=3.10",
+    "pytest-cov>=4.0",
+    "responses>=0.22.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: unit tests (fast, mocked)",
+    "integration: integration tests (real/mocked external services)",
+    "benchmark: long-running eval benchmarks",
+    "slow: slow tests",
+]
+addopts = "-v --strict-markers --tb=short"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

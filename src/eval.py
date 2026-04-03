@@ -30,6 +30,8 @@ from pyspark.sql.types import (
 import ollama
 from dotenv import load_dotenv
 
+from .tools import search_policy, search_damage, search_claims
+
 load_dotenv()
 
 MLFLOW_EXPERIMENT = "insurance-agent-ablation"
@@ -203,8 +205,6 @@ def run_agent_query(
         image_path: Optional[str] = None,
     ) -> tuple[str, int, int]:
 
-    from tools import search_policy, search_damage, search_claims
-
     context_parts: list[str] = []
  
     if config.use_retrieval:
@@ -238,7 +238,6 @@ def run_agent_query(
             for r in search_claims(query, top_k=5):
                 context_parts.append(f"[CLAIM {r.metadata.get('claim_id','')}] {r.content[:300]}")
  
-    client = ollama.Ollama(host="http://localhost:11434")
     system = (
         "You are an insurance claims assistant. Answer using the provided context. "
         "Cite specific policy sections or claim IDs where relevant. "
@@ -247,18 +246,22 @@ def run_agent_query(
     context_str = "\n\n".join(context_parts) if context_parts else "(no retrieved context)"
     user_msg = f"CONTEXT:\n{context_str}\n\nQUESTION: {query}"
 
-    response = ollama.chat(
-        model=os.getenv("OLLAMA_MODEL", "llama3.2"),
-        messages=[
-            {"role": "system",  "content": system},
-            {"role": "user",    "content": user_msg},
-        ],
-    )
-    text = response["message"]["content"]
-    in_tok  = response.get("prompt_eval_count", 0)   # Ollama's token count fields
-    out_tok = response.get("eval_count", 0)
-    
-    return text, in_tok, out_tok
+    try:
+        response = ollama.chat(
+            model=os.getenv("OLLAMA_MODEL", "llama3.2"),
+            messages=[
+                {"role": "system",  "content": system},
+                {"role": "user",    "content": user_msg},
+            ],
+        )
+        text = response["message"]["content"]
+        in_tok  = response.get("prompt_eval_count", 0)
+        out_tok = response.get("eval_count", 0)
+        
+        return text, in_tok, out_tok
+    except Exception as e:
+        return f"ERROR: {str(e)}", 0, 0
+
 
 # Metrics
 def keyword_recall(response: str, keywords: list[str]) -> float:

@@ -1,0 +1,57 @@
+[
+  {
+    "claim_id": "CLM-2024-001",
+    "claimant_name": "Sarah Chen",
+    "policy_number": "POL-MOTOR-1042",
+    "insurance_type": "motor",
+    "incident_type": "collision",
+    "incident_date": "2024-01-15",
+    "claim_status": "approved",
+    "claim_amount": 4050.00,
+    "description": "Rear-ended at traffic lights. Vehicle sustained bumper and frame damage."
+  },
+  {
+    "claim_id": "CLM-2024-002",
+    "claimant_name": "John Smith",
+    "policy_number": "POL-HOME-5678",
+    "insurance_type": "home",
+    "incident_type": "water_damage",
+    "incident_date": "2024-02-20",
+    "claim_status": "pending",
+    "claim_amount": 12500.00,
+    "description": "Burst pipe in master bedroom caused water damage to ceiling and walls."
+  },
+  {
+    "claim_id": "CLM-2024-003",
+    "claimant_name": "Alex Kim",
+    "policy_number": "POL-MOTOR-9999",
+    "insurance_type": "motor",
+    "incident_type": "windscreen",
+    "incident_date": "2024-03-10",
+    "claim_status": "approved",
+    "claim_amount": 350.00,
+    "description": "Stone damage to windscreen. No excess applies."
+  },
+  {
+    "claim_id": "CLM-2024-004",
+    "claimant_name": "Michael Torres",
+    "policy_number": "POL-HOME-2021",
+    "insurance_type": "home",
+    "incident_type": "water_damage",
+    "incident_date": "2024-01-05",
+    "claim_status": "rejected",
+    "claim_amount": 8000.00,
+    "description": "Gradual pipe corrosion led to slow leak. Excluded under policy section 4.2."
+  },
+  {
+    "claim_id": "CLM-2023-087",
+    "claimant_name": "Lisa Anderson",
+    "policy_number": "POL-MOTOR-3333",
+    "insurance_type": "motor",
+    "incident_type": "collision",
+    "incident_date": "2023-11-22",
+    "claim_status": "approved",
+    "claim_amount": 5250.00,
+    "description": "Side-swipe accident in parking lot. Paint and door damage."
+  }
+]

@@ -1,0 +1,15 @@
+# dev and testing dependencies
+# pip install -r requirements-dev.txt
+
+# yesting framework
+pytest>=7.0
+pytest-mock>=3.10
+pytest-cov>=4.0
+
+# mocking and fixtures
+responses>=0.22.0            # Mock HTTP calls (if needed)
+fakefs>=4.7.0                # Mock filesystem operations
+
+# type checking
+mypy>=1.0
+types-requests>=2.31.0

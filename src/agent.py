@@ -23,7 +23,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
-from tools import search_policy, search_damage, search_claims, RetrievalResult
+from .tools import search_policy, search_damage, search_claims, RetrievalResult
 
 load_dotenv()
 
@@ -68,7 +68,7 @@ def memory_node(state: AgentState) -> AgentState:
     Extract structured entities from the latest user message and update the
     claim draft. In a full production system this would use NER / slot filling.
     """
-    last_message = state["messages"][-1]
+    last_message = state["messages"][-1] if state["messages"] else ""
     content = last_message.content if hasattr(last_message, "content") else str(last_message)
  
     draft = state.get("claim_draft", {})
