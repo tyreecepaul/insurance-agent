@@ -97,6 +97,31 @@ Thumbs.db
 # Logs
 *.log
 logs/
+test_output.log
+pytest_output.log
+
+# API Server
+uploads/           # Temporary uploaded files
+test_*.py          # Don't commit test scripts
+
+# Frontend (React/Vue)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/package-lock.json
+frontend/yarn.lock
+frontend/.vite
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# IDE Extensions
+.vscode/extensions/
+.idea/inspectionProfiles/
 
 # Temporary files
 *.tmp

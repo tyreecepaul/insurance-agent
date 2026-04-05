@@ -30,3 +30,8 @@ pydantic>=2.0.0                  # data validation for claim records
 langchain-ollama>=0.1.0          # LLM-as-judge calls
 pyspark>=3.5.0                   # results aggregation (local mode — no cluster needed)
 mlflow>=2.13.0                   # experiment tracking + UI at localhost:5000
+
+# api & web
+fastapi>=0.104.0                 # REST API framework
+uvicorn>=0.24.0                  # ASGI server for FastAPI
+python-multipart>=0.0.6          # file upload handling

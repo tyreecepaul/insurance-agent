@@ -129,7 +129,7 @@ def ingest_policies(client: chromadb.PersistentClient, model: SentenceTransforme
                 doc_id = f"{policy_id}_p{page_num}_c{chunk_idx}"
                 if doc_id in existing:
                     continue
- 
+                    
                 embedding = model.encode(chunk).tolist()
                 collection.add(
                     ids=[doc_id],
