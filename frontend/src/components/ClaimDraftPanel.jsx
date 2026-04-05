@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api/client';
+import './ClaimDraftPanel.css';
 
 export default function ClaimDraftPanel({ sessionId, claimDraft, onUpdate }) {
   const [editMode, setEditMode] = useState(false);
