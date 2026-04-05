@@ -95,6 +95,44 @@ def mock_langchain_chat_ollama():
     return chat
 
 
+# ── Ollama Availability Check ────────────────────────────────────────────────
+
+def ollama_available():
+    """Check if Ollama service is running on localhost:11434."""
+    import requests
+    try:
+        response = requests.get("http://localhost:11434/api/tags", timeout=2)
+        return response.status_code == 200
+    except:
+        return False
+
+
+@pytest.fixture
+def skip_if_no_ollama():
+    """Skip test if Ollama is not available."""
+    if not ollama_available():
+        pytest.skip("Ollama service not running on localhost:11434")
+
+
+def chroma_collections_available():
+    """Check if ChromaDB has required collections initialized."""
+    try:
+        import chromadb
+        client = chromadb.PersistentClient(path="./chroma_db")
+        collections = {c.name for c in client.list_collections()}
+        required = {"policy_index", "damage_index", "claims_index"}
+        return required.issubset(collections)
+    except:
+        return False
+
+
+@pytest.fixture
+def skip_if_no_chroma():
+    """Skip test if ChromaDB collections are not initialized."""
+    if not chroma_collections_available():
+        pytest.skip("ChromaDB collections not initialized. Run: python src/ingest.py")
+
+
 # ── File System Fixtures ─────────────────────────────────────────────────────
 
 @pytest.fixture

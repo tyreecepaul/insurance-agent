@@ -80,7 +80,7 @@ class TestSessionManagement:
 class TestChatEndpoint:
     """Test chat message endpoint."""
     
-    def test_chat_single_message(self, client):
+    def test_chat_single_message(self, client, skip_if_no_ollama, skip_if_no_chroma):
         """Send a single chat message."""
         # Create session
         session_resp = client.post("/api/session/create")
@@ -106,7 +106,7 @@ class TestChatEndpoint:
         assert data["messages_count"] >= 1
         assert "timestamp" in data
     
-    def test_chat_multiple_turns(self, client):
+    def test_chat_multiple_turns(self, client, skip_if_no_ollama, skip_if_no_chroma):
         """Chat with multiple turns preserves state."""
         # Create session
         session_resp = client.post("/api/session/create")
@@ -139,7 +139,7 @@ class TestChatEndpoint:
         assert response.status_code == 404
         assert "not found" in response.json()["error"].lower()
     
-    def test_chat_memory_extraction(self, client):
+    def test_chat_memory_extraction(self, client, skip_if_no_ollama, skip_if_no_chroma):
         """Memory node should extract insurance type and policy numbers."""
         session_resp = client.post("/api/session/create")
         session_id = session_resp.json()["session_id"]
@@ -166,7 +166,7 @@ class TestChatEndpoint:
 class TestConversationHistory:
     """Test conversation history retrieval."""
     
-    def test_get_empty_conversation(self, client):
+    def test_get_empty_conversation(self, client, skip_if_no_ollama, skip_if_no_chroma):
         """Getting conversation with no messages."""
         session_resp = client.post("/api/session/create")
         session_id = session_resp.json()["session_id"]
@@ -196,7 +196,7 @@ class TestConversationHistory:
             if msg["role"] == "agent":
                 assert "query_type" in msg
     
-    def test_conversation_history_multiple_turns(self, client):
+    def test_conversation_history_multiple_turns(self, client, skip_if_no_ollama, skip_if_no_chroma):
         """Conversation history includes all turns."""
         session_resp = client.post("/api/session/create")
         session_id = session_resp.json()["session_id"]
@@ -412,7 +412,7 @@ class TestErrorHandling:
 class TestIntegrationFlow:
     """Test complete user flows."""
     
-    def test_full_claim_workflow(self, client):
+    def test_full_claim_workflow(self, client, skip_if_no_ollama, skip_if_no_chroma):
         """Complete workflow: create session -> chat -> upload -> draft -> reset."""
         # 1. Create session
         create_resp = client.post("/api/session/create")
