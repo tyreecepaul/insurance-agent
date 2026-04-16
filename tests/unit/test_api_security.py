@@ -272,14 +272,14 @@ class TestCleanupLoopLogging:
         After the fix the exception must be bound ('except Exception as exc:') and
         logged/printed so that repeated failures surface in application logs.
 
-        Test: inspect create_app source for 'except Exception as exc' in the
+        Test: inspect create_cleanup_lifespan source for 'except Exception as exc' in the
         cleanup loop — absent before fix, present after.
         """
         import inspect
         import src.api as api_module
 
         # Arrange / Act
-        source = inspect.getsource(api_module.create_app)
+        source = inspect.getsource(api_module.create_cleanup_lifespan)
 
         # Assert — exception must be bound for logging, not silently discarded
         assert "except Exception as exc" in source, (
