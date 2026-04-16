@@ -8,13 +8,14 @@ Run:  python main.py --api
 """
 
 import os
+import shutil
 import uuid
 import asyncio
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timedelta
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -130,9 +131,6 @@ class SessionManager:
         self.expiration_hours = expiration_hours
         self.upload_dir = Path(os.getenv("UPLOAD_DIR", "./uploads"))
         self.upload_dir.mkdir(exist_ok=True)
-        # Import shutil at module level (not inside loop) for consistency
-        import shutil
-        self._shutil = shutil
     
     @property
     def agent(self):
@@ -263,7 +261,7 @@ class SessionManager:
         # Delete uploaded files
         session_dir = self.upload_dir / session_id
         if session_dir.exists():
-            self._shutil.rmtree(session_dir)
+            shutil.rmtree(session_dir)
         
         # Delete session
         del self.sessions[session_id]
@@ -282,7 +280,7 @@ class SessionManager:
             # so disk storage does not grow unboundedly.
             session_dir = self.upload_dir / session_id
             if session_dir.exists():
-                self._shutil.rmtree(session_dir, ignore_errors=True)
+                shutil.rmtree(session_dir, ignore_errors=True)
             del self.sessions[session_id]
         
         return len(expired)
@@ -292,19 +290,20 @@ class SessionManager:
 # FastAPI Application
 # ==============================================================================
 
-def create_app() -> FastAPI:
-    """Create and configure FastAPI application."""
-
-    # Initialize session manager early so it is in scope for the lifespan handler.
-    manager = SessionManager(expiration_hours=int(os.getenv("SESSION_EXPIRY_HOURS", "24")))
-
-    # HIGH improvement: background periodic cleanup so expired sessions and their
-    # uploaded files are removed automatically without requiring a manual API call.
-    # NOTE: cleanup_interval of 3600 s (1 hr) means expired sessions can sit up to
-    # 2× their expiration_hours before being cleaned — set CLEANUP_INTERVAL_SECS
-    # to a smaller value if more frequent cleanup is needed.
-    cleanup_interval = int(os.getenv("SESSION_CLEANUP_INTERVAL_SECS", "3600"))
-
+def create_cleanup_lifespan(manager: SessionManager, cleanup_interval: int):
+    """
+    Create a lifespan context manager for periodic session cleanup.
+    
+    Encapsulates the background cleanup loop logic, keeping create_app focused
+    on application wiring rather than cleanup details.
+    
+    Args:
+        manager: SessionManager instance to clean up expired sessions.
+        cleanup_interval: Seconds between cleanup runs (from env or default 3600).
+    
+    Returns:
+        An asynccontextmanager (lifespan) suitable for FastAPI app initialization.
+    """
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         async def _cleanup_loop():
@@ -318,8 +317,30 @@ def create_app() -> FastAPI:
                     print(f"[cleanup] session cleanup error: {exc}", flush=True)
 
         task = asyncio.create_task(_cleanup_loop())
-        yield
-        task.cancel()
+        try: 
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    return lifespan
+
+
+def create_app() -> FastAPI:
+    """Create and configure FastAPI application."""
+
+    # Initialize session manager and cleanup configuration.
+    manager = SessionManager(
+        expiration_hours=int(os.getenv("SESSION_EXPIRY_HOURS", "24"))
+    )
+    # HIGH improvement: background periodic cleanup so expired sessions and their
+    # uploaded files are removed automatically without requiring a manual API call.
+    # NOTE: cleanup_interval of 3600 s (1 hr) means expired sessions can sit up to
+    # 2× their expiration_hours before being cleaned — set CLEANUP_INTERVAL_SECS
+    # to a smaller value if more frequent cleanup is needed.
+    cleanup_interval = int(os.getenv("SESSION_CLEANUP_INTERVAL_SECS", "3600"))
+    lifespan = create_cleanup_lifespan(manager, cleanup_interval)
 
     app = FastAPI(
         title="Insurance Claims Agent API",

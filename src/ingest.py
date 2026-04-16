@@ -50,6 +50,10 @@ POLICY_DIR = Path(_config.get("POLICY_DIR", "data/policy_docs"))
 DAMAGE_DIR = Path(_config.get("DAMAGE_DIR", "data/damage_photos"))
 CLAIMS_FILE = Path(_config.get("CLAIMS_FILE", "data/claims_data/claims.json"))
 
+# Module-level cache for BLIP-2 model to avoid reloading on every generate_caption call.
+# Stores tuple (processor, model, device) or None if unavailable.
+_BLIP2 = None
+
 def get_client() -> chromadb.PersistentClient:
     """
     Get or create a ChromaDB persistent client.
@@ -225,13 +229,20 @@ def load_clip(model_name: str, pretrained: str):
     model.eval()
     return model, preprocess, device
 
-def _load_blip2_model():
+def _get_blip2():
     """
-    Load BLIP-2 processor and model once.
-
+    Lazy-load BLIP-2 once and cache it.
+    
+    Loads the processor and model on first call and caches the result globally.
+    Subsequent calls return the cached tuple. Device selection is centralized here.
+    
     Returns:
-        tuple: (processor, blip_model, device) or (None, None, None) if unavailable.
+        tuple: (processor, model, device) if successful, None if unavailable.
     """
+    global _BLIP2
+    if _BLIP2 is not None:
+        return _BLIP2
+
     try:
         from transformers import Blip2Processor, Blip2ForConditionalGeneration
 
@@ -244,46 +255,37 @@ def _load_blip2_model():
         )
         device = "cuda" if torch.cuda.is_available() else "cpu"
         blip_model = blip_model.to(device)
-        return processor, blip_model, device
+        _BLIP2 = (processor, blip_model, device)
+        return _BLIP2
     except Exception as e:
         print(f"   BLIP-2 unavailable ({e}), captions will use filename fallback.")
-        return None, None, None
+        _BLIP2 = None
+        return None
 
 
-def generate_caption(
-    image_path: Path,
-    processor=None,
-    blip_model=None,
-    device: Optional[str] = None,
-) -> str:
+def generate_caption(image_path: Path) -> str:
     """
     Generate a natural language caption for an insurance damage photo.
-
-    Accepts a pre-loaded BLIP-2 processor and model so the caller can load
-    them once and reuse across many images (avoids reloading on every call).
-    Falls back to a filename-derived caption if BLIP-2 is unavailable.
+    
+    Uses the cached BLIP-2 model (loaded once on first call via _get_blip2).
+    Falls back to filename-based caption if BLIP-2 is unavailable or if
+    caption generation fails.
 
     Args:
         image_path: Path to the damage photo image file.
-        processor: Pre-loaded Blip2Processor (optional; loaded on demand if None).
-        blip_model: Pre-loaded Blip2ForConditionalGeneration (optional).
-        device: Device string ('cuda' or 'cpu'); detected automatically if None.
 
     Returns:
         str: A natural language description of the damage image.
     """
-    if processor is None or blip_model is None:
-        # Caller did not pre-load — load now (single-image path / fallback)
-        processor, blip_model, device = _load_blip2_model()
-
-    if processor is None:
+    blip2 = _get_blip2()
+    if blip2 is None:
+        # BLIP-2 unavailable — use filename-based fallback
         stem = image_path.stem.replace("_", " ").replace("-", " ")
         return f"insurance damage photo: {stem}"
 
-    try:
-        if device is None:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+    processor, blip_model, device = blip2
 
+    try:
         image = Image.open(image_path).convert("RGB")
         inputs = processor(
             images=image,
@@ -296,6 +298,7 @@ def generate_caption(
         return caption.strip()
 
     except Exception as e:
+        # Caption generation failed — fall back to filename
         stem = image_path.stem.replace("_", " ").replace("-", " ")
         print(f"   Caption generation failed ({e}), using filename as caption.")
         return f"insurance damage photo: {stem}"
@@ -357,8 +360,8 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
     print(f"\n   Indexing {len(images)} damage photos...")
     clip_model, preprocess, device = load_clip(CLIP_MODEL, CLIP_PRETRAIN)
 
-    # MEDIUM fix: load BLIP-2 once before the loop instead of reloading per image.
-    blip_processor, blip_model_inst, blip_device = _load_blip2_model()
+    # BLIP-2 is loaded once on first call to generate_caption via the cached _get_blip2().
+    # No need to pre-load here; the cache ensures "load once, reuse" behavior.
 
     for img_path in tqdm(images, desc="Images"):
         doc_id = img_path.stem
@@ -368,8 +371,8 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
         # Embed with CLIP
         embedding = embed_image_clip(img_path, clip_model, preprocess, device)
 
-        # Generate caption (reuse pre-loaded BLIP-2 model)
-        caption = generate_caption(img_path, blip_processor, blip_model_inst, blip_device)
+        # Generate caption using cached BLIP-2 loader
+        caption = generate_caption(img_path)
         
         # Clear GPU cache after each image to prevent memory fragmentation
         if torch.cuda.is_available():
