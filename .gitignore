@@ -139,3 +139,6 @@ dmypy.json
 # Claude Code
 system-prompts/
 CLAUDE.md
+
+uploads/
+evil.sh
