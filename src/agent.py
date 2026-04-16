@@ -14,6 +14,7 @@ python src/agent.py
 """
 
 import os
+import re
 import json
 from typing import Annotated, Optional, TypedDict
 
@@ -87,7 +88,6 @@ def memory_node(state: AgentState) -> AgentState:
         draft["insurance_type"] = "health"
  
     # Extract policy numbers like POL-MOTOR-1042
-    import re
     pol_match = re.search(r"POL-[A-Z]+-\d+", content, re.IGNORECASE)
     if pol_match:
         state["detected_policy_number"] = pol_match.group(0).upper()

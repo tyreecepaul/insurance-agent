@@ -287,3 +287,108 @@ class TestVariants:
         # Progressive increase (not strictly monotonic due to design)
         # but A4 > A1 definitely
         assert feature_counts["A4"] > feature_counts["A1"]
+
+
+# ── New tests added by code review ────────────────────────────────────────
+# test_judge_score_clamped_to_max_5_when_llm_returns_higher  (LOW improvement)
+# test_judge_score_clamped_to_min_1_when_llm_returns_lower   (LOW improvement)
+# test_run_evaluation_processes_all_variants_when_no_filter  (HIGH – Bug 1)
+# ──────────────────────────────────────────────────────────────────────────
+
+@pytest.mark.unit
+class TestLLMAsJudgeScoreClamping:
+    """LOW: llm_as_judge should clamp scores to [1, 5]."""
+
+    @patch("src.eval.ollama.chat")
+    def test_judge_score_clamped_to_max_5_when_llm_returns_higher(self, mock_ollama):
+        """
+        LOW - Add range validation in llm_as_judge: score > 5 should be clamped to 5.
+        Without the fix, score=6 passes through and corrupts eval metrics.
+        """
+        mock_ollama.return_value = {
+            "message": {"content": '{"score": 6, "reason": "exceptional"}'}
+        }
+        score, _ = llm_as_judge("q", "r", "gt")
+        # After fix: score must be clamped to 5
+        assert score <= 5, f"Score {score} exceeds maximum of 5; clamping not applied."
+
+    @patch("src.eval.ollama.chat")
+    def test_judge_score_clamped_to_min_1_when_llm_returns_lower(self, mock_ollama):
+        """
+        LOW - score < 1 (e.g. 0) should be clamped to 1.
+        """
+        mock_ollama.return_value = {
+            "message": {"content": '{"score": 0, "reason": "useless"}'}
+        }
+        score, _ = llm_as_judge("q", "r", "gt")
+        assert score >= 1, f"Score {score} below minimum of 1; clamping not applied."
+
+
+@pytest.mark.unit
+class TestRunEvaluationLoop:
+    """HIGH – Bug 1: return + spark.stop() inside variant loop causes early exit."""
+
+    @patch("src.eval.mlflow")
+    @patch("src.eval.get_spark")
+    @patch("src.eval.aggregate_results")
+    @patch("src.eval.build_spark_df")
+    @patch("src.eval.log_variant_to_mlflow")
+    @patch("src.eval.ollama.chat")
+    @patch("src.eval.search_policy")
+    @patch("src.eval.search_damage")
+    @patch("src.eval.search_claims")
+    def test_run_evaluation_processes_all_variants_when_no_filter(
+        self,
+        mock_claims, mock_damage, mock_policy, mock_ollama,
+        mock_log_mlflow, mock_build_df, mock_aggregate, mock_get_spark, mock_mlflow,
+    ):
+        """
+        HIGH - eval.py: return statement inside variant loop exits after the first
+        variant, so A2/A3/A4 are never processed when running the full ablation.
+        After the fix, results must contain entries for all 4 variants.
+        """
+        from src.eval import run_evaluation
+
+        # -- Spark mock -------------------------------------------------
+        mock_df = MagicMock()
+        mock_df.cache.return_value = mock_df
+        mock_df.coalesce.return_value.write.mode.return_value \
+               .option.return_value.csv = MagicMock()
+        mock_df.coalesce.return_value.write.mode.return_value.parquet = MagicMock()
+        mock_spark_session = MagicMock()
+        mock_spark_session.createDataFrame.return_value = mock_df
+        mock_get_spark.return_value = mock_spark_session
+        mock_build_df.return_value = mock_df
+
+        # aggregate_results returns three DataFrames
+        agg_df = MagicMock()
+        agg_df.collect.return_value = []
+        agg_df.show = MagicMock()
+        mock_aggregate.return_value = (agg_df, agg_df, agg_df)
+
+        # -- MLflow mock ------------------------------------------------
+        cm = MagicMock()
+        cm.__enter__ = MagicMock(return_value=None)
+        cm.__exit__  = MagicMock(return_value=False)
+        mock_mlflow.start_run.return_value = cm
+
+        # -- Ollama mock (agent query + judge) --------------------------
+        mock_ollama.return_value = {
+            "message": {"content": '{"score": 4, "reason": "ok"}'},
+            "prompt_eval_count": 10,
+            "eval_count": 5,
+        }
+        mock_policy.return_value = []
+        mock_damage.return_value = []
+        mock_claims.return_value = []
+
+        # Act – run ALL variants, restrict to "factual" family (3 test cases)
+        results = run_evaluation(variant_filter=None, family_filter="factual")
+
+        # Assert – all 4 variants (A1-A4) must appear in results
+        variant_keys = {r.variant_key for r in results}
+        assert len(variant_keys) == 4, (
+            f"Expected 4 variants (A1-A4) in results, got {len(variant_keys)}: "
+            f"{sorted(variant_keys)}. "
+            "Bug: 'return all_results' inside the variant for-loop exits after A1."
+        )

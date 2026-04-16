@@ -29,10 +29,15 @@ import torch
 
 load_dotenv()
 
-# Load configuration from config.json
+# Load configuration from config.json (graceful fallback if missing)
 CONFIG_PATH = Path(__file__).parent.parent / "config.json"
-with open(CONFIG_PATH, "r") as f:
-    _config = json.load(f)
+try:
+    with open(CONFIG_PATH, "r") as f:
+        _config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    # FileNotFoundError: config.json does not exist (expected in new installs).
+    # JSONDecodeError: config.json exists but is malformed (missing or invalid JSON).
+    _config = {}
 
 CHROMA_DIR = _config.get("CHROMA_PERSIST_DIR", "./chroma_db")
 TEXT_MODEL = _config.get("TEXT_EMBED_MODEL", "all-MiniLM-L6-v2")
@@ -76,8 +81,14 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     Returns:
         list[str]: List of text chunks with the specified overlap between them.
     """
-    chunks, start = [], 0
+    # MEDIUM fix: step <= 0 causes an infinite loop; reject invalid configs early.
     step = chunk_size - overlap
+    if step <= 0:
+        raise ValueError(
+            f"overlap ({overlap}) must be less than chunk_size ({chunk_size}); "
+            f"got step={step} which would cause an infinite loop."
+        )
+    chunks, start = [], 0
     while start < len(text):
         chunks.append(text[start : start + chunk_size])
         start += step
@@ -214,48 +225,79 @@ def load_clip(model_name: str, pretrained: str):
     model.eval()
     return model, preprocess, device
 
-def generate_caption(image_path: Path) -> str:
+def _load_blip2_model():
     """
-    Generate a natural language caption for an insurance damage photo.
-    
-    Uses BLIP-2 (vision-language captioning model) to generate a description of
-    the damage photo. If BLIP-2 is unavailable or fails, falls back to using the
-    filename as a caption with a default prefix.
-    
-    Args:
-        image_path: Path to the damage photo image file.
-    
+    Load BLIP-2 processor and model once.
+
     Returns:
-        str: A natural language description of the damage image.
+        tuple: (processor, blip_model, device) or (None, None, None) if unavailable.
     """
     try:
         from transformers import Blip2Processor, Blip2ForConditionalGeneration
- 
+
         processor = Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-sm")
         blip_model = Blip2ForConditionalGeneration.from_pretrained(
             "Salesforce/blip2-flan-t5-sm",
             torch_dtype=torch.float16,
-            device_map="auto",              # Auto-distribute across available memory
-            load_in_8bit=True,              # Quantize to 8-bit
+            device_map="auto",
+            load_in_8bit=True,
         )
         device = "cuda" if torch.cuda.is_available() else "cpu"
         blip_model = blip_model.to(device)
- 
+        return processor, blip_model, device
+    except Exception as e:
+        print(f"   BLIP-2 unavailable ({e}), captions will use filename fallback.")
+        return None, None, None
+
+
+def generate_caption(
+    image_path: Path,
+    processor=None,
+    blip_model=None,
+    device: Optional[str] = None,
+) -> str:
+    """
+    Generate a natural language caption for an insurance damage photo.
+
+    Accepts a pre-loaded BLIP-2 processor and model so the caller can load
+    them once and reuse across many images (avoids reloading on every call).
+    Falls back to a filename-derived caption if BLIP-2 is unavailable.
+
+    Args:
+        image_path: Path to the damage photo image file.
+        processor: Pre-loaded Blip2Processor (optional; loaded on demand if None).
+        blip_model: Pre-loaded Blip2ForConditionalGeneration (optional).
+        device: Device string ('cuda' or 'cpu'); detected automatically if None.
+
+    Returns:
+        str: A natural language description of the damage image.
+    """
+    if processor is None or blip_model is None:
+        # Caller did not pre-load — load now (single-image path / fallback)
+        processor, blip_model, device = _load_blip2_model()
+
+    if processor is None:
+        stem = image_path.stem.replace("_", " ").replace("-", " ")
+        return f"insurance damage photo: {stem}"
+
+    try:
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
         image = Image.open(image_path).convert("RGB")
         inputs = processor(
             images=image,
             text="Describe the damage in this insurance photo:",
             return_tensors="pt",
         ).to(device, torch.float16)
- 
+
         output = blip_model.generate(**inputs, max_new_tokens=80)
         caption = processor.decode(output[0], skip_special_tokens=True)
         return caption.strip()
- 
+
     except Exception as e:
-        # Fallback: use filename as description
         stem = image_path.stem.replace("_", " ").replace("-", " ")
-        print(f"   BLIP-2 unavailable ({e}), using filename as caption.")
+        print(f"   Caption generation failed ({e}), using filename as caption.")
         return f"insurance damage photo: {stem}"
     
 def embed_image_clip(image_path: Path, clip_model, preprocess, device) -> list[float]:
@@ -314,17 +356,20 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
  
     print(f"\n   Indexing {len(images)} damage photos...")
     clip_model, preprocess, device = load_clip(CLIP_MODEL, CLIP_PRETRAIN)
- 
+
+    # MEDIUM fix: load BLIP-2 once before the loop instead of reloading per image.
+    blip_processor, blip_model_inst, blip_device = _load_blip2_model()
+
     for img_path in tqdm(images, desc="Images"):
         doc_id = img_path.stem
         if doc_id in existing:
             continue
- 
+
         # Embed with CLIP
         embedding = embed_image_clip(img_path, clip_model, preprocess, device)
- 
-        # Generate caption
-        caption = generate_caption(img_path)
+
+        # Generate caption (reuse pre-loaded BLIP-2 model)
+        caption = generate_caption(img_path, blip_processor, blip_model_inst, blip_device)
         
         # Clear GPU cache after each image to prevent memory fragmentation
         if torch.cuda.is_available():

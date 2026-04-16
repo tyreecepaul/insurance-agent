@@ -19,9 +19,13 @@ import numpy as np
 def mock_chroma_collection():
     """Mock ChromaDB collection with add/get/query methods."""
     collection = MagicMock()
-    collection.get.return_value = {"ids": []}
+    collection.get.return_value = {"ids": [], "documents": [], "metadatas": []}
     collection.add = MagicMock()
-    collection.query = MagicMock(return_value={"ids": [], "documents": [], "distances": []})
+    # ChromaDB query returns nested lists: results["documents"][0] is the inner list.
+    # Bug 5 fix: "metadatas" key was missing, causing KeyError in retrieval functions.
+    collection.query = MagicMock(return_value={
+        "ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]
+    })
     collection.count.return_value = 0
     return collection
 

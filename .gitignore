@@ -135,3 +135,7 @@ temp/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Claude Code
+system-prompts/
+CLAUDE.md
