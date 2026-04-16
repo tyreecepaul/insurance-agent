@@ -291,7 +291,9 @@ def llm_as_judge(query: str, response: str, ground_truth: str) -> tuple[int, str
     )
     try:
         parsed = json.loads(resp["message"]["content"])
-        return int(parsed["score"]), str(parsed.get("reason", ""))
+        # LOW: clamp score to [1, 5] so out-of-range LLM responses don't corrupt metrics
+        score = max(1, min(5, int(parsed["score"])))
+        return score, str(parsed.get("reason", ""))
     except Exception:
         return 3, "parse error"
 
@@ -421,73 +423,76 @@ def run_evaluation(
     mlflow.set_tracking_uri("mlruns")
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
  
-    spark = get_spark()
-    spark.sparkContext.setLogLevel("WARN")
- 
-    variants_to_run = {
-        k: v for k, v in VARIANTS.items()
-        if variant_filter is None or k == variant_filter
-    }
-    tests_to_run = [
-        t for t in BENCHMARK
-        if family_filter is None or t["family"] == family_filter
-    ]
- 
-    all_results: list[EvalResult] = []
-    results_by_variant: dict[str, list[EvalResult]] = {}
-    total = len(variants_to_run) * len(tests_to_run)
-    done  = 0
- 
-    print(f"\nRunning {total} evaluation cases across {len(variants_to_run)} variants\n")
- 
-    for v_key, config in variants_to_run.items():
-        print(f"\n── {config.name} {'─' * (44 - len(config.name))}")
-        variant_results: list[EvalResult] = []
- 
-        for test in tests_to_run:
-            done += 1
-            print(f"  [{done:2}/{total}] {test['id']}  {test['family']}")
- 
-            t0 = time.perf_counter()
-            try:
-                response_text, in_tok, out_tok = run_agent_query(
+    spark = None  # Initialize to None so finally block can safely call .stop()
+    try:
+        spark = get_spark()
+        spark.sparkContext.setLogLevel("WARN")
+    
+        variants_to_run = {
+            k: v for k, v in VARIANTS.items()
+            if variant_filter is None or k == variant_filter
+        }
+        tests_to_run = [
+            t for t in BENCHMARK
+            if family_filter is None or t["family"] == family_filter
+        ]
+    
+        all_results: list[EvalResult] = []
+        results_by_variant: dict[str, list[EvalResult]] = {}
+        total = len(variants_to_run) * len(tests_to_run)
+        done  = 0
+    
+        print(f"\nRunning {total} evaluation cases across {len(variants_to_run)} variants\n")
+    
+        for v_key, config in variants_to_run.items():
+            print(f"\n── {config.name} {'─' * (44 - len(config.name))}")
+            variant_results: list[EvalResult] = []
+    
+            for test in tests_to_run:
+                done += 1
+                print(f"  [{done:2}/{total}] {test['id']}  {test['family']}")
+    
+                t0 = time.perf_counter()
+                try:
+                    response_text, in_tok, out_tok = run_agent_query(
+                        query=test["query"],
+                        config=config,
+                    )
+                except Exception as e:
+                    response_text = f"ERROR: {e}"
+                    in_tok = out_tok = 0
+    
+                latency_ms = (time.perf_counter() - t0) * 1000
+                recall     = keyword_recall(response_text, test.get("keywords", []))
+                score, reason = llm_as_judge(test["query"], response_text, test["ground_truth"])
+    
+                result = EvalResult(
+                    test_id=test["id"],
+                    family=test["family"],
+                    variant_key=v_key,
+                    variant_name=config.name,
                     query=test["query"],
-                    config=config,
+                    response=response_text[:600],
+                    latency_ms=round(latency_ms, 1),
+                    input_tokens=in_tok,
+                    output_tokens=out_tok,
+                    total_tokens=in_tok + out_tok,
+                    recall_at_5=recall,
+                    judge_score=score,
+                    judge_reason=reason,
                 )
-            except Exception as e:
-                response_text = f"ERROR: {e}"
-                in_tok = out_tok = 0
- 
-            latency_ms = (time.perf_counter() - t0) * 1000
-            recall     = keyword_recall(response_text, test.get("keywords", []))
-            score, reason = llm_as_judge(test["query"], response_text, test["ground_truth"])
- 
-            result = EvalResult(
-                test_id=test["id"],
-                family=test["family"],
-                variant_key=v_key,
-                variant_name=config.name,
-                query=test["query"],
-                response=response_text[:600],
-                latency_ms=round(latency_ms, 1),
-                input_tokens=in_tok,
-                output_tokens=out_tok,
-                total_tokens=in_tok + out_tok,
-                recall_at_5=recall,
-                judge_score=score,
-                judge_reason=reason,
-            )
-            variant_results.append(result)
-            all_results.append(result)
- 
-        results_by_variant[v_key] = variant_results
+                variant_results.append(result)
+                all_results.append(result)
+    
+            results_by_variant[v_key] = variant_results
 
+        # ── Aggregation and reporting (outside the variant loop) ──────────────
         print("\nAggregating with PySpark...")
         df = build_spark_df(all_results, spark)
         df.cache()
-    
+
         variant_summary, family_breakdown, cross_modal_gap = aggregate_results(df)
-    
+
         v_summary_rows   = {row["variant_key"]: row for row in variant_summary.collect()}
         f_breakdown_rows: dict[str, list] = {}
         for row in family_breakdown.collect():
@@ -507,38 +512,42 @@ def run_evaluation(
 
         df.coalesce(1).write.mode("overwrite").option("header", True).csv("eval/results_csv")
         df.coalesce(1).write.mode("overwrite").parquet("eval/results_parquet")
-    
-        # ── Print summary tables ──────────────────────────────────
+
+        # ── Print summary tables ──────────────────────────────────────────────
         print("\n\n╔══════════════════════════════════════════════════╗")
         print("║         VARIANT SUMMARY  (PySpark)              ║")
         print("╚══════════════════════════════════════════════════╝")
         variant_summary.show(truncate=False)
-    
+
         print("╔══════════════════════════════════════════════════╗")
         print("║         PER-FAMILY BREAKDOWN                    ║")
         print("╚══════════════════════════════════════════════════╝")
         family_breakdown.show(truncate=False)
-    
+
         print("╔══════════════════════════════════════════════════╗")
         print("║         CROSS-MODAL GAP  (A2 vs A4)             ║")
         print("╚══════════════════════════════════════════════════╝")
         cross_modal_gap.show(truncate=False)
-    
+
         print(f"\nResults → eval/results_csv/  and  eval/results_parquet/")
         print(f"MLflow UI → run:  mlflow ui  → open http://localhost:5000")
         print(f"Experiment name: {MLFLOW_EXPERIMENT}\n")
-    
-        spark.stop()
+
         return all_results
-    
-    
-    if __name__ == "__main__":
-        parser = argparse.ArgumentParser(description="Insurance agent evaluation harness")
-        parser.add_argument("--variant", choices=list(VARIANTS.keys()),
-                            help="Run only one ablation variant (A1/A2/A3/A4)")
-        parser.add_argument("--family",
-                            choices=["factual", "cross_modal", "analytical", "conversational"],
-                            help="Run only one query family")
-        args = parser.parse_args()
-        run_evaluation(variant_filter=args.variant, family_filter=args.family)
+    finally:
+        # MEDIUM fix: spark.stop() must be in finally block so it runs even if
+        # get_spark() or aggregate_results() raises. Check spark is not None first.
+        if spark is not None:
+            spark.stop()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Insurance agent evaluation harness")
+    parser.add_argument("--variant", choices=list(VARIANTS.keys()),
+                        help="Run only one ablation variant (A1/A2/A3/A4)")
+    parser.add_argument("--family",
+                        choices=["factual", "cross_modal", "analytical", "conversational"],
+                        help="Run only one query family")
+    args = parser.parse_args()
+    run_evaluation(variant_filter=args.variant, family_filter=args.family)
     

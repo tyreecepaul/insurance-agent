@@ -212,3 +212,80 @@ class TestIntegration:
         full = "".join([chunks[0]] + [c[50:] for c in chunks[1:]])
         assert "SECTION 3" in full
         assert "SECTION 4" in full
+
+
+# ── New tests added by code review ─────────────────────────────────────────
+# test_chunk_text_raises_when_overlap_equals_chunk_size   (MEDIUM – Edge Case 1)
+# test_chunk_text_raises_when_overlap_exceeds_chunk_size  (MEDIUM – Edge Case 1)
+# test_chunk_text_last_chunk_shorter_than_chunk_size      (coverage gap)
+# ───────────────────────────────────────────────────────────────────────────
+
+import multiprocessing
+import queue as _queue
+
+
+def _chunk_text_worker(text, chunk_size, overlap, result_q):
+    """Run chunk_text in a subprocess so an infinite loop can be killed."""
+    try:
+        from src.ingest import chunk_text
+        chunk_text(text, chunk_size=chunk_size, overlap=overlap)
+        result_q.put("no_error")
+    except ValueError as exc:
+        result_q.put(f"ValueError:{exc}")
+    except Exception as exc:
+        result_q.put(f"Other:{exc}")
+
+
+def _run_chunk_text_with_timeout(text, chunk_size, overlap, timeout=2):
+    """
+    Return the result string from _chunk_text_worker, or "TIMEOUT" if the
+    subprocess does not finish within *timeout* seconds.
+    """
+    ctx = multiprocessing.get_context("fork")
+    q   = ctx.Queue()
+    p   = ctx.Process(target=_chunk_text_worker, args=(text, chunk_size, overlap, q))
+    p.start()
+    p.join(timeout)
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        return "TIMEOUT"
+    try:
+        return q.get_nowait()
+    except _queue.Empty:
+        return "TIMEOUT"
+
+
+@pytest.mark.unit
+class TestChunkTextEdgeCases:
+    """Edge-case and guard tests for chunk_text."""
+
+    # MEDIUM – Improvement suggestion: Add ValueError guard when overlap >= chunk_size
+    def test_chunk_text_raises_when_overlap_equals_chunk_size(self):
+        """
+        MEDIUM: chunk_text with overlap == chunk_size produces step=0, causing
+        an infinite loop. After the fix a ValueError must be raised immediately.
+        """
+        result = _run_chunk_text_with_timeout("a" * 500, chunk_size=10, overlap=10)
+        assert result.startswith("ValueError"), (
+            f"Expected ValueError when overlap==chunk_size, got: {result!r}. "
+            "Without the fix the function loops forever (TIMEOUT)."
+        )
+
+    def test_chunk_text_raises_when_overlap_exceeds_chunk_size(self):
+        """
+        MEDIUM: overlap > chunk_size also produces a non-positive step → infinite loop.
+        """
+        result = _run_chunk_text_with_timeout("a" * 500, chunk_size=10, overlap=15)
+        assert result.startswith("ValueError"), (
+            f"Expected ValueError when overlap>chunk_size, got: {result!r}."
+        )
+
+    def test_chunk_text_last_chunk_shorter_than_chunk_size_when_text_not_multiple(self):
+        """Last chunk may be < chunk_size; verify all content is still included."""
+        text   = "a" * 250
+        chunks = chunk_text(text, chunk_size=100, overlap=0)
+        # 250 / 100 = 2 full chunks + 1 partial chunk of 50
+        assert len(chunks) == 3
+        assert len(chunks[-1]) == 50
+        assert "".join(chunks) == text

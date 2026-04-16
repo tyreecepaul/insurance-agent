@@ -333,5 +333,101 @@ class TestVariantConfigs:
     
     def test_all_variants_present(self):
         """All 4 variants (A1-A4) should be defined."""
-        
+
         assert set(VARIANTS.keys()) == {"A1", "A2", "A3", "A4"}
+
+
+# ── New tests added by code review ────────────────────────────────────────
+# test_memory_node_handles_empty_messages_gracefully   (edge case)
+# test_memory_node_first_type_wins_when_multiple_types (edge case 4)
+# test_memory_node_does_not_overwrite_existing_incident_type (edge case)
+# test_router_unknown_llm_response_defaults_conversational (coverage gap)
+# ──────────────────────────────────────────────────────────────────────────
+
+def _make_state(content="", extra=None):
+    state = {
+        "messages": [HumanMessage(content=content)] if content else [],
+        "query_type": "conversational",
+        "claim_draft": {},
+        "retrieved_docs": [],
+        "image_path": None,
+        "detected_policy_number": None,
+        "detected_insurance_type": None,
+    }
+    if extra:
+        state.update(extra)
+    return state
+
+
+@pytest.mark.unit
+class TestMemoryNodeEdgeCases:
+    """Additional edge-case tests for memory_node."""
+
+    def test_memory_node_handles_empty_messages_gracefully_when_no_messages(self):
+        """Edge case: empty message list must not raise IndexError."""
+        # Arrange
+        state = _make_state("")  # produces [] messages
+
+        # Act
+        result = memory_node(state)
+
+        # Assert — no exception; nothing extracted
+        assert result["detected_insurance_type"] is None
+        assert result["detected_policy_number"] is None
+
+    def test_memory_node_first_insurance_type_wins_when_multiple_types_mentioned(self):
+        """
+        Edge Case 4: Message mentions motor AND home — the elif chain means
+        whichever keyword appears first in the code wins (motor).
+        Test documents this deterministic behaviour.
+        """
+        # Arrange
+        state = _make_state("My car and my house were both damaged.")
+
+        # Act
+        result = memory_node(state)
+
+        # Assert — 'motor' is the first branch matched
+        assert result["detected_insurance_type"] == "motor"
+        assert result["claim_draft"]["insurance_type"] == "motor"
+
+    def test_memory_node_does_not_overwrite_existing_incident_type_when_already_set(self):
+        """
+        An existing incident_type in the draft must not be overwritten, because
+        memory_node uses draft.get("incident_type", default).
+        """
+        # Arrange
+        state = _make_state(
+            "There was a crash at the intersection.",
+            extra={"claim_draft": {"incident_type": "theft"}},
+        )
+
+        # Act
+        result = memory_node(state)
+
+        # Assert — pre-existing value wins
+        assert result["claim_draft"]["incident_type"] == "theft"
+
+
+@pytest.mark.unit
+class TestRouterNodeEdgeCases:
+    """Additional edge-case tests for router_node."""
+
+    @patch("src.agent.llm")
+    def test_router_unknown_llm_response_defaults_to_conversational_when_unrecognised(
+        self, mock_llm
+    ):
+        """
+        Coverage gap: LLM returns an unrecognised string (not one of the 4 types).
+        Router should default to 'conversational', not raise KeyError.
+        """
+        # Arrange
+        mock_llm.invoke.return_value = MagicMock(content="I cannot classify this query")
+        state = _make_state("Something ambiguous that confuses the router.")
+
+        # Act
+        from src.agent import router_node
+        result = router_node(state)
+
+        # Assert
+        assert result["query_type"] == "conversational"

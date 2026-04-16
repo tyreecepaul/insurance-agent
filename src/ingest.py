@@ -29,10 +29,15 @@ import torch
 
 load_dotenv()
 
-# Load configuration from config.json
+# Load configuration from config.json (graceful fallback if missing)
 CONFIG_PATH = Path(__file__).parent.parent / "config.json"
-with open(CONFIG_PATH, "r") as f:
-    _config = json.load(f)
+try:
+    with open(CONFIG_PATH, "r") as f:
+        _config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    # FileNotFoundError: config.json does not exist (expected in new installs).
+    # JSONDecodeError: config.json exists but is malformed (missing or invalid JSON).
+    _config = {}
 
 CHROMA_DIR = _config.get("CHROMA_PERSIST_DIR", "./chroma_db")
 TEXT_MODEL = _config.get("TEXT_EMBED_MODEL", "all-MiniLM-L6-v2")
@@ -44,6 +49,10 @@ CHUNK_OVERLAP = _config.get("CHUNK_OVERLAP", 50)
 POLICY_DIR = Path(_config.get("POLICY_DIR", "data/policy_docs"))
 DAMAGE_DIR = Path(_config.get("DAMAGE_DIR", "data/damage_photos"))
 CLAIMS_FILE = Path(_config.get("CLAIMS_FILE", "data/claims_data/claims.json"))
+
+# Module-level cache for BLIP-2 model to avoid reloading on every generate_caption call.
+# Stores tuple (processor, model, device) or None if unavailable.
+_BLIP2 = None
 
 def get_client() -> chromadb.PersistentClient:
     """
@@ -76,8 +85,14 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     Returns:
         list[str]: List of text chunks with the specified overlap between them.
     """
-    chunks, start = [], 0
+    # MEDIUM fix: step <= 0 causes an infinite loop; reject invalid configs early.
     step = chunk_size - overlap
+    if step <= 0:
+        raise ValueError(
+            f"overlap ({overlap}) must be less than chunk_size ({chunk_size}); "
+            f"got step={step} which would cause an infinite loop."
+        )
+    chunks, start = [], 0
     while start < len(text):
         chunks.append(text[start : start + chunk_size])
         start += step
@@ -214,48 +229,78 @@ def load_clip(model_name: str, pretrained: str):
     model.eval()
     return model, preprocess, device
 
-def generate_caption(image_path: Path) -> str:
+def _get_blip2():
     """
-    Generate a natural language caption for an insurance damage photo.
+    Lazy-load BLIP-2 once and cache it.
     
-    Uses BLIP-2 (vision-language captioning model) to generate a description of
-    the damage photo. If BLIP-2 is unavailable or fails, falls back to using the
-    filename as a caption with a default prefix.
-    
-    Args:
-        image_path: Path to the damage photo image file.
+    Loads the processor and model on first call and caches the result globally.
+    Subsequent calls return the cached tuple. Device selection is centralized here.
     
     Returns:
-        str: A natural language description of the damage image.
+        tuple: (processor, model, device) if successful, None if unavailable.
     """
+    global _BLIP2
+    if _BLIP2 is not None:
+        return _BLIP2
+
     try:
         from transformers import Blip2Processor, Blip2ForConditionalGeneration
- 
+
         processor = Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-sm")
         blip_model = Blip2ForConditionalGeneration.from_pretrained(
             "Salesforce/blip2-flan-t5-sm",
             torch_dtype=torch.float16,
-            device_map="auto",              # Auto-distribute across available memory
-            load_in_8bit=True,              # Quantize to 8-bit
+            device_map="auto",
+            load_in_8bit=True,
         )
         device = "cuda" if torch.cuda.is_available() else "cpu"
         blip_model = blip_model.to(device)
- 
+        _BLIP2 = (processor, blip_model, device)
+        return _BLIP2
+    except Exception as e:
+        print(f"   BLIP-2 unavailable ({e}), captions will use filename fallback.")
+        _BLIP2 = None
+        return None
+
+
+def generate_caption(image_path: Path) -> str:
+    """
+    Generate a natural language caption for an insurance damage photo.
+    
+    Uses the cached BLIP-2 model (loaded once on first call via _get_blip2).
+    Falls back to filename-based caption if BLIP-2 is unavailable or if
+    caption generation fails.
+
+    Args:
+        image_path: Path to the damage photo image file.
+
+    Returns:
+        str: A natural language description of the damage image.
+    """
+    blip2 = _get_blip2()
+    if blip2 is None:
+        # BLIP-2 unavailable — use filename-based fallback
+        stem = image_path.stem.replace("_", " ").replace("-", " ")
+        return f"insurance damage photo: {stem}"
+
+    processor, blip_model, device = blip2
+
+    try:
         image = Image.open(image_path).convert("RGB")
         inputs = processor(
             images=image,
             text="Describe the damage in this insurance photo:",
             return_tensors="pt",
         ).to(device, torch.float16)
- 
+
         output = blip_model.generate(**inputs, max_new_tokens=80)
         caption = processor.decode(output[0], skip_special_tokens=True)
         return caption.strip()
- 
+
     except Exception as e:
-        # Fallback: use filename as description
+        # Caption generation failed — fall back to filename
         stem = image_path.stem.replace("_", " ").replace("-", " ")
-        print(f"   BLIP-2 unavailable ({e}), using filename as caption.")
+        print(f"   Caption generation failed ({e}), using filename as caption.")
         return f"insurance damage photo: {stem}"
     
 def embed_image_clip(image_path: Path, clip_model, preprocess, device) -> list[float]:
@@ -314,16 +359,19 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
  
     print(f"\n   Indexing {len(images)} damage photos...")
     clip_model, preprocess, device = load_clip(CLIP_MODEL, CLIP_PRETRAIN)
- 
+
+    # BLIP-2 is loaded once on first call to generate_caption via the cached _get_blip2().
+    # No need to pre-load here; the cache ensures "load once, reuse" behavior.
+
     for img_path in tqdm(images, desc="Images"):
         doc_id = img_path.stem
         if doc_id in existing:
             continue
- 
+
         # Embed with CLIP
         embedding = embed_image_clip(img_path, clip_model, preprocess, device)
- 
-        # Generate caption
+
+        # Generate caption using cached BLIP-2 loader
         caption = generate_caption(img_path)
         
         # Clear GPU cache after each image to prevent memory fragmentation

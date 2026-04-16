@@ -8,13 +8,14 @@ Run:  python main.py --api
 """
 
 import os
-import json
+import shutil
 import uuid
-import time
+import asyncio
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timedelta
 
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -229,20 +230,27 @@ class SessionManager:
         session.last_updated = datetime.now()
         return session.agent_state["claim_draft"]
     
-    def upload_image(self, session_id: str, file: UploadFile) -> str:
+    async def upload_image(self, session_id: str, file: UploadFile) -> str:
         """Save uploaded image and return path."""
         session = self.get_session(session_id)
-        
+
         # Create session-specific upload directory
         session_dir = self.upload_dir / session_id
         session_dir.mkdir(exist_ok=True)
-        
-        # Save file
-        file_path = session_dir / file.filename
+
+        # HIGH fix (Bug 3): sanitise filename to prevent path traversal.
+        # Path(name).name strips all directory components (e.g. "../../evil.sh" → "evil.sh").
+        safe_filename = Path(file.filename).name
+        if not safe_filename:
+            raise HTTPException(status_code=400, detail="Invalid filename")
+        file_path = session_dir / safe_filename
+
+        # HIGH fix (Bug 4): use await file.read() (non-blocking) instead of
+        # the synchronous file.file.read() which blocks the event loop.
+        contents = await file.read()
         with open(file_path, "wb") as f:
-            contents = file.file.read()
             f.write(contents)
-        
+
         session.last_updated = datetime.now()
         return str(file_path)
     
@@ -253,7 +261,6 @@ class SessionManager:
         # Delete uploaded files
         session_dir = self.upload_dir / session_id
         if session_dir.exists():
-            import shutil
             shutil.rmtree(session_dir)
         
         # Delete session
@@ -269,6 +276,11 @@ class SessionManager:
                 expired.append(session_id)
         
         for session_id in expired:
+            # MEDIUM fix (Edge Case 3): delete uploaded files for expired sessions
+            # so disk storage does not grow unboundedly.
+            session_dir = self.upload_dir / session_id
+            if session_dir.exists():
+                shutil.rmtree(session_dir, ignore_errors=True)
             del self.sessions[session_id]
         
         return len(expired)
@@ -278,15 +290,65 @@ class SessionManager:
 # FastAPI Application
 # ==============================================================================
 
+def create_cleanup_lifespan(manager: SessionManager, cleanup_interval: int):
+    """
+    Create a lifespan context manager for periodic session cleanup.
+    
+    Encapsulates the background cleanup loop logic, keeping create_app focused
+    on application wiring rather than cleanup details.
+    
+    Args:
+        manager: SessionManager instance to clean up expired sessions.
+        cleanup_interval: Seconds between cleanup runs (from env or default 3600).
+    
+    Returns:
+        An asynccontextmanager (lifespan) suitable for FastAPI app initialization.
+    """
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        async def _cleanup_loop():
+            while True:
+                await asyncio.sleep(cleanup_interval)
+                try:
+                    manager.cleanup_expired_sessions()
+                except Exception as exc:
+                    # Log exceptions so ops has visibility if cleanup repeatedly fails.
+                    # Sessions will continue to be cleaned up on next interval.
+                    print(f"[cleanup] session cleanup error: {exc}", flush=True)
+
+        task = asyncio.create_task(_cleanup_loop())
+        try: 
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    return lifespan
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
-    
+
+    # Initialize session manager and cleanup configuration.
+    manager = SessionManager(
+        expiration_hours=int(os.getenv("SESSION_EXPIRY_HOURS", "24"))
+    )
+    # HIGH improvement: background periodic cleanup so expired sessions and their
+    # uploaded files are removed automatically without requiring a manual API call.
+    # NOTE: cleanup_interval of 3600 s (1 hr) means expired sessions can sit up to
+    # 2× their expiration_hours before being cleaned — set CLEANUP_INTERVAL_SECS
+    # to a smaller value if more frequent cleanup is needed.
+    cleanup_interval = int(os.getenv("SESSION_CLEANUP_INTERVAL_SECS", "3600"))
+    lifespan = create_cleanup_lifespan(manager, cleanup_interval)
+
     app = FastAPI(
         title="Insurance Claims Agent API",
         description="REST API for insurance claim processing agent",
         version="1.0.0",
+        lifespan=lifespan,
     )
-    
+
     # CORS configuration
     cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
     app.add_middleware(
@@ -296,14 +358,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
-    # Initialize session manager
-    manager = SessionManager(expiration_hours=int(os.getenv("SESSION_EXPIRY_HOURS", "24")))
-    
+
     # ==============================================================================
     # Endpoints
     # ==============================================================================
-    
+
     @app.get("/health")
     def health() -> dict:
         """Health check endpoint."""
@@ -381,11 +440,15 @@ def create_app() -> FastAPI:
     @app.post("/api/upload-image", response_model=ImageUploadResponse)
     async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)) -> ImageUploadResponse:
         """Upload a damage photo."""
-        file_path = manager.upload_image(session_id, file)
-        
+        # HIGH fix (Bug 4): await the now-async upload_image method
+        file_path = await manager.upload_image(session_id, file)
+        # MEDIUM fix: return sanitised filename, not raw user input.
+        # The raw filename could expose dir traversal attempts (e.g. "../../evil.sh").
+        safe_filename = Path(file.filename).name
+
         return ImageUploadResponse(
             session_id=session_id,
-            filename=file.filename,
+            filename=safe_filename,
             file_path=file_path,
             uploaded_at=datetime.now().isoformat(),
         )

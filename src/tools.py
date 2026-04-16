@@ -26,10 +26,15 @@ warnings.filterwarnings("ignore", message=".*position_ids.*")
 
 load_dotenv()
 
-# Load configuration from config.json
+# Load configuration from config.json (graceful fallback if missing)
 CONFIG_PATH = Path(__file__).parent.parent / "config.json"
-with open(CONFIG_PATH, "r") as f:
-    _config = json.load(f)
+try:
+    with open(CONFIG_PATH, "r") as f:
+        _config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    # FileNotFoundError: config.json does not exist (expected in new installs).
+    # JSONDecodeError: config.json exists but is malformed (missing or invalid JSON).
+    _config = {}
 
 CHROMA_DIR = _config.get("CHROMA_PERSIST_DIR", "./chroma_db")
 TEXT_MODEL = _config.get("TEXT_EMBED_MODEL", "all-MiniLM-L6-v2")
@@ -127,6 +132,8 @@ def _rrf_merge(
         dense_dists: list[float],
         source: str,
         k: int = 60,
+        bm25_docs: Optional[list[str]] = None,
+        bm25_metas: Optional[list[dict]] = None,
     ) -> list[RetrievalResult]:
     """
     Merge and rank results from dense and BM25 retrieval using Reciprocal Rank Fusion (RRF).
@@ -158,13 +165,20 @@ def _rrf_merge(
     for rank, doc_id in enumerate(bm25_ids):
         rrf_scores[doc_id] = rrf_scores.get(doc_id, 0) + 1 / (k + rank + 1)
  
-    # Build lookup for content + metadata
+    # Build lookup for content + metadata starting from dense results.
+    # MEDIUM fix: overlay BM25-only docs so they are not silently dropped.
     id_to_doc  = dict(zip(dense_ids, dense_docs))
     id_to_meta = dict(zip(dense_ids, dense_metas))
     id_to_dist = dict(zip(dense_ids, dense_dists))
- 
+
+    if bm25_docs is not None and bm25_metas is not None:
+        for doc_id, doc, meta in zip(bm25_ids, bm25_docs, bm25_metas):
+            if doc_id not in id_to_doc:
+                id_to_doc[doc_id]  = doc
+                id_to_meta[doc_id] = meta
+
     sorted_ids = sorted(rrf_scores, key=rrf_scores.get, reverse=True)
- 
+
     results = []
     for doc_id in sorted_ids:
         if doc_id in id_to_doc:
@@ -237,18 +251,26 @@ def search_policy(
     all_ids   = all_data["ids"]
 
     bm25_ranked_ids: list[str] = []
+    bm25_ranked_docs:  list[str]  = []
+    bm25_ranked_metas: list[dict] = []
     if corpus:
+        all_id_to_doc  = dict(zip(all_ids, all_data["documents"]))
+        all_id_to_meta = dict(zip(all_ids, all_data["metadatas"]))
         tokenised = [doc.lower().split() for doc in corpus]
         bm25 = BM25Okapi(tokenised)
         bm25_scores = bm25.get_scores(query.lower().split())
         ranked_idx  = np.argsort(bm25_scores)[::-1][: top_k * 2]
-        bm25_ranked_ids = [all_ids[i] for i in ranked_idx]
+        bm25_ranked_ids   = [all_ids[i] for i in ranked_idx]
+        bm25_ranked_docs  = [all_id_to_doc[all_ids[i]]  for i in ranked_idx]
+        bm25_ranked_metas = [all_id_to_meta[all_ids[i]] for i in ranked_idx]
 
-    # reciprocal rank fusion
+    # MEDIUM fix: pass BM25 content so _rrf_merge can include BM25-only results
     results = _rrf_merge(
         dense_ids, bm25_ranked_ids,
         dense_docs, dense_metas, dense_dists,
         source="policy",
+        bm25_docs=bm25_ranked_docs or None,
+        bm25_metas=bm25_ranked_metas or None,
     )
     return results[:top_k]
 
