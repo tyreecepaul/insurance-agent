@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+htmlcov/
+*.egg-info/
+
+# Data / indices — mounted as volumes at runtime, not baked into the image
+chroma_db/
+uploads/
+
+# Dev / CI artefacts
+.git/
+.github/
+tests/
+eval/
+mlruns/
+pytest_output.log
+
+# Docs
+docs/
+*.md

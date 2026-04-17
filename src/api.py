@@ -13,7 +13,7 @@ import uuid
 import asyncio
 from pathlib import Path
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
@@ -92,6 +92,16 @@ class SessionResetResponse(BaseModel):
     """Response after session reset."""
     session_id: str
     status: str  # "cleared"
+    timestamp: str
+
+
+class HealthResponse(BaseModel):
+    """Detailed health / readiness response."""
+    status: str                   # "ok" | "degraded"
+    version: str
+    uptime_seconds: float
+    active_sessions: int
+    ollama_url: str
     timestamp: str
 
 
@@ -327,8 +337,15 @@ def create_cleanup_lifespan(manager: SessionManager, cleanup_interval: int):
     return lifespan
 
 
+# Permitted MIME types for damage photo uploads
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
+
+    _app_start = datetime.now(timezone.utc)
 
     # Initialize session manager and cleanup configuration.
     manager = SessionManager(
@@ -363,10 +380,24 @@ def create_app() -> FastAPI:
     # Endpoints
     # ==============================================================================
 
-    @app.get("/health")
-    def health() -> dict:
-        """Health check endpoint."""
-        return {"status": "ok", "timestamp": datetime.now().isoformat()}
+    @app.get("/health", response_model=HealthResponse)
+    def health() -> HealthResponse:
+        """
+        Health and readiness probe.
+
+        Returns uptime, active session count, and configured model endpoint so
+        an operator (or Docker healthcheck) can confirm the service is live and
+        correctly wired to its Ollama backend.
+        """
+        uptime = (datetime.now(timezone.utc) - _app_start).total_seconds()
+        return HealthResponse(
+            status="ok",
+            version="1.0.0",
+            uptime_seconds=round(uptime, 1),
+            active_sessions=len(manager.sessions),
+            ollama_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
     
     
     @app.post("/api/session/create", response_model=dict)
@@ -439,11 +470,34 @@ def create_app() -> FastAPI:
     
     @app.post("/api/upload-image", response_model=ImageUploadResponse)
     async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)) -> ImageUploadResponse:
-        """Upload a damage photo."""
-        # HIGH fix (Bug 4): await the now-async upload_image method
+        """
+        Upload a damage photo.
+
+        Validates content type (JPEG / PNG / WebP only) and enforces a 10 MB
+        size limit before writing to disk, so malformed or oversized uploads
+        are rejected at the boundary rather than reaching the CLIP pipeline.
+        """
+        # Content-type validation — reject non-image uploads early
+        if file.content_type not in _ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=415,
+                detail=(
+                    f"Unsupported file type '{file.content_type}'. "
+                    f"Accepted types: {sorted(_ALLOWED_IMAGE_TYPES)}"
+                ),
+            )
+
+        # Size validation — read once, check, then pass bytes to upload handler
+        contents = await file.read()
+        if len(contents) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large ({len(contents):,} bytes). Limit is {_MAX_UPLOAD_BYTES:,} bytes (10 MB).",
+            )
+        # Rewind so upload_image can read the file normally
+        await file.seek(0)
+
         file_path = await manager.upload_image(session_id, file)
-        # MEDIUM fix: return sanitised filename, not raw user input.
-        # The raw filename could expose dir traversal attempts (e.g. "../../evil.sh").
         safe_filename = Path(file.filename).name
 
         return ImageUploadResponse(

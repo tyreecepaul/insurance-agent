@@ -13,7 +13,12 @@ Usage:
     mlflow ui                                 # view results at localhost:5000
 """
 
+import sys
 import os
+
+# Add parent directory to path so we can import src modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 import json
 import argparse
@@ -30,7 +35,7 @@ from pyspark.sql.types import (
 import ollama
 from dotenv import load_dotenv
 
-from .tools import search_policy, search_damage, search_claims
+from src.tools import search_policy, search_damage, search_claims
 
 load_dotenv()
 
@@ -510,8 +515,12 @@ def run_evaluation(
                 family_rows=f_breakdown_rows.get(v_key, []),
             )
 
-        df.coalesce(1).write.mode("overwrite").option("header", True).csv("eval/results_csv")
-        df.coalesce(1).write.mode("overwrite").parquet("eval/results_parquet")
+        # Write CSV and Parquet using pandas to avoid Hadoop ViewFileSystem issues with Java 21+
+        os.makedirs("eval/results_csv", exist_ok=True)
+        os.makedirs("eval/results_parquet", exist_ok=True)
+        pandas_df = df.toPandas()
+        pandas_df.to_csv("eval/results_csv/results.csv", index=False)
+        pandas_df.to_parquet("eval/results_parquet/results.parquet", index=False)
 
         # ── Print summary tables ──────────────────────────────────────────────
         print("\n\n╔══════════════════════════════════════════════════╗")
@@ -535,8 +544,6 @@ def run_evaluation(
 
         return all_results
     finally:
-        # MEDIUM fix: spark.stop() must be in finally block so it runs even if
-        # get_spark() or aggregate_results() raises. Check spark is not None first.
         if spark is not None:
             spark.stop()
 

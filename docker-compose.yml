@@ -1,0 +1,50 @@
+# ── Insurance Claims Agent — docker-compose ───────────────────────────────────
+#
+# Start:   docker compose up --build
+# Stop:    docker compose down
+#
+# Prerequisites:
+#   1. Ollama running on host:  ollama serve
+#   2. Data indexed:            python src/ingest.py   (run once outside Docker,
+#                               or mount pre-built chroma_db volume below)
+#
+# On Linux hosts, replace 'host.docker.internal' with your Docker bridge IP
+# (usually 172.17.0.1) or add: extra_hosts: ["host.docker.internal:host-gateway"]
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  insurance-agent:
+    build: .
+    image: insurance-agent:latest
+    container_name: insurance-agent-api
+    ports:
+      - "8000:8000"
+
+    # Volume mounts — keep persistent state outside the container:
+    #   chroma_db/  pre-built vector indices (avoid re-indexing on every start)
+    #   data/       policy PDFs, damage photos, claims JSON (read-only)
+    #   uploads/    user-uploaded damage photos written at runtime
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./data:/app/data:ro
+      - ./uploads:/app/uploads
+
+    environment:
+      # Point at host Ollama — change if Ollama runs in its own container
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2
+      # Session lifecycle
+      SESSION_EXPIRY_HOURS: "24"
+      CLEANUP_INTERVAL_SECS: "3600"
+      # CORS — add your frontend origin if needed
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173"
+
+    restart: unless-stopped
+
+    # Mirror the Dockerfile HEALTHCHECK so compose reports healthy/unhealthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
