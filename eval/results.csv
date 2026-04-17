@@ -1,0 +1,562 @@
+test_id,family,variant_key,variant_name,query,response,latency_ms,input_tokens,output_tokens,total_tokens,recall_at_5,judge_score,judge_reason
+F1-01,factual,A1,A1_plain_llm,What is the excess amount for a comprehensive motor insurance claim?,"I'm unable to provide an answer without knowing the specific policy details or claim ID.
+
+However, I can tell you that in most cases, the excess amount for a comprehensive motor insurance claim varies depending on the policy terms. According to Section 3 of the General Insurance (Motor) Regulations of 1998, as mentioned in our company's policy document, the maximum excess allowed is specified in the policy certificate.
+
+To provide an accurate answer, I would need more information about the specific policy details or claim ID.",1760.9,82,103,185,0.667,4,"Mostly correct with minor gaps, as the AI provided a vague answer but pointed to relevant policy document and regulations."
+F1-02,factual,A1,A1_plain_llm,"Is windscreen damage covered, and is there an excess?","Unfortunately, without the provided context (e.g., insurance policy details, vehicle make/model, claim ID), I can only provide a general answer.
+
+Typically, comprehensive coverage policies (which may include windscreen damage) often have an excess that the policyholder must pay before the insurer covers the cost of repairs or replacement. The excess amount is usually specified in the policy's terms and conditions.
+
+To determine if windscreen damage is covered under your specific policy, I would recommend checking your insurance policy documents, particularly the comprehensive coverage section ",909.3,82,140,222,0.667,4,"Provides general guidance on checking policy documents and contacting the insurer, but lacks specific details about windscreen damage coverage for a typical comprehensive motor insurance policy."
+F1-03,factual,A1,A1_plain_llm,What home insurance events are excluded under the policy?,"Based on general knowledge of typical home insurance policies, I can provide some common exclusions.
+
+According to most standard homeowners' insurance policies, the following events are usually excluded:
+
+1. War and nuclear war (Section 2.3 of the policy)
+2. Earthquake or volcanic eruption (Section 4.5 of the policy)
+3. Floods (Section 6.2 of the policy)
+
+Additionally, many policies exclude damage caused by:
+
+* Maintenance or upkeep issues (e.g., worn-out roof or foundation)
+* Wear and tear
+* Ordinary maintenance activities
+
+It's essential to note that exclusions can vary depending on the insu",1036.7,80,164,244,0.667,4,"The response is mostly correct, but lacks specific details about the policy sections and may vary depending on the insurance company, missing key information such as vermin and intentional damage."
+F2-01,cross_modal,A1,A1_plain_llm,Here is a photo of damage to my car's rear bumper after a collision. Will this be covered?,"I'd like to clarify that I don't have any specific policy information or claim details about your car accident, as no context was provided.
+
+However, based on general knowledge and assuming you're referring to a typical auto insurance policy, damage to the rear bumper after a collision might be covered under the following sections:
+
+* Collision coverage (Section 2.01 of the standard auto insurance policy): This coverage would pay for damages to your vehicle caused by an accident with another vehicle or object.
+* Comprehensive coverage (Section 2.02 of the standard auto insurance policy): If yo",1392.7,91,228,319,1.0,4,"Mostly correct, but lacked context and specific policy details to make a definitive determination."
+F2-02,cross_modal,A1,A1_plain_llm,I have a photo of my ceiling which has water damage from a burst pipe. Is this covered?,"I can try to help you with that.
+
+Based on general insurance knowledge and without specific policy details, it's possible that water damage caused by a burst pipe might be covered under certain circumstances.
+
+Typically, homeowners' policies usually cover damage caused by accidents or sudden events, such as burst pipes. However, the coverage would depend on the specific policy terms and conditions.
+
+Could you please provide me with your claim ID or the details of your policy, so I can get a better understanding of what's covered? Alternatively, if you have any supporting documentation, such as",857.3,90,131,221,0.75,4,The response acknowledges the potential for coverage under certain circumstances but lacks specific guidance and instead requests policy details or documentation.
+F2-03,cross_modal,A1,A1_plain_llm,Here is a photo showing crash damage to my vehicle on the highway. Is this covered under my policy?,"I'm happy to help you with your question! However, I don't have any specific information about your policy or claim details.
+
+That being said, based on general knowledge of insurance policies, if your policy includes comprehensive coverage and collision coverage, then damage caused by a crash could be covered under those sections. Comprehensive coverage typically covers damages from events such as theft, vandalism, fire, natural disasters, or accidents, while collision coverage specifically covers damages to your vehicle in the event of an accident.
+
+To determine whether this is covered under ",1157.6,91,186,277,0.6,2,The response is mostly incorrect as it fails to provide a clear answer based on the provided information and instead suggests actions the user should take instead of making a direct judgment about their policy coverage.
+F2-04,cross_modal,A1,A1_plain_llm,Can you assess this vehicle damage from a collision? What would my claim cover?,"I'm unable to provide an assessment of the vehicle damage without knowing more about the specifics of the incident or your policy. 
+
+Could you please provide me with more information about the accident, such as:
+
+* Claim ID (if applicable)
+* Date and location of the accident
+* A detailed description of what happened leading up to and during the collision
+* Any injuries sustained by you or others involved
+
+Without this information, I won't be able to accurately assess the damage or determine what your claim would cover.",688.8,86,103,189,0.2,2,The response provided unnecessary information that wasn't requested and failed to directly answer the question about claim coverage.
+F3-01,analytical,A1,A1_plain_llm,My car was rear-ended at traffic lights last night. What steps do I need to take to lodge a claim?,"Since no context was provided, I'll provide general guidance.
+
+To lodge a claim for your damaged vehicle due to a collision, follow these steps:
+
+1. **Notify the authorities**: Report the accident to the police and obtain an incident number or report number.
+2. **Gather information**: Collect the following details:
+	* Vehicle details (make, model, year, VIN, etc.)
+	* Accident description
+	* Names and contact information of all parties involved
+	* Photos of the damaged vehicle(s)
+3. **Contact your insurance provider**: Reach out to your insurance company's claims department and inform them abou",1849.2,93,301,394,0.6,4,"Mostly correct, with minor gaps in providing a general checklist and not explicitly mentioning the importance of contacting the insurer within 24 hours or the need for repair quote after inspection."
+F3-02,analytical,A1,A1_plain_llm,A storm has damaged my roof and rain has come through. What do I need to do right now?,"Given the absence of context, I'll provide a general response.
+
+If you've experienced damage to your roof due to a storm and water is entering your home, here are the immediate steps you should take:
+
+1. **Ensure your safety**: Be cautious when inspecting your property, as damaged roofs can be unstable.
+2. **Document the damage**: Take photos or videos of the affected area from multiple angles for future reference.
+3. **Contact your insurance company**: Reach out to your insurance provider's claims department (likely referenced in your policy document, Section 4: Claims Procedure) and inform t",1273.2,91,203,294,0.4,2,The response is mostly wrong and lacks specific guidance on documenting damage with photos and keeping receipts for emergency work.
+F3-03,analytical,A1,A1_plain_llm,What steps do I need to follow to claim for a hospital stay?,"I'll provide you with general guidance on how to proceed with an insurance claim for a hospital stay.
+
+To claim for a hospital stay, please refer to your policy documents, specifically the Policy Terms and Conditions or the Insurance Product Disclosure Sheet (IPDS). These documents will outline the requirements and procedures for making a claim.
+
+Here are the general steps you can follow:
+
+1. **Review your policy**: Check your policy documents to ensure that the hospital stay is covered under your policy.
+2. **Gather required documents**: You may need to provide:
+	* Hospital bill or invoice
+	*",2227.1,84,365,449,0.333,2,"The response provided general guidance but did not specify the required steps to claim for a hospital stay, missing key details such as obtaining pre-approval and confirming the hospital is in the fund network."
+F3-04,analytical,A1,A1_plain_llm,My laptop was stolen from my car — what do I do now?,"Unfortunately, no context has been provided for me to draw upon specific policy details or claim IDs.
+
+However, based on general knowledge, if your laptop was stolen from your car and you have insurance coverage, here are some steps you can take:
+
+1. **Notify the police**: Report the theft to the local authorities immediately. This will help create a police report, which may be required for your insurance claim.
+2. **Contact your insurance provider**: Reach out to your insurance company's 24-hour claims hotline (if available) or contact them during business hours to report the incident and ini",1859.3,84,308,392,0.667,3,"The actual response is partially correct, missing key details such as the importance of obtaining a claim number from the police report and submitting an itemized claim."
+F3-05,analytical,A1,A1_plain_llm,How do I get my windscreen repaired under my policy?,"I'm sorry to inform that I don't have any context about your specific policy or claim history. However, based on general knowledge of insurance policies, I can provide some general guidance.
+
+Typically, if you've purchased a comprehensive policy with glass cover, you may be eligible for windscreen repair under your policy. To initiate the process, please contact our claims department and provide them with your policy number, vehicle details, and a description of the damage.
+
+You can find your policy number on your policy documents or online account. You may also need to fill out a claim form a",1221.1,82,193,275,0.6,2,"The response incorrectly assumes the user has a comprehensive policy and glass cover, and lacks specific guidance on how to initiate the claim process."
+F4-01,conversational,A1,A1_plain_llm,What is the current status of claim CLM-2024-001?,"I'm not able to access any claims information as there is no context provided for claim CLM-2024-001. If you could provide more context or information about the claim, such as the type of policy or event it's related to, I'd be happy to try and assist you further.",441.5,85,62,147,0.25,2,"The AI assistant is unable to access claim information without context, providing an unclear and misleading response."
+F4-02,conversational,A1,A1_plain_llm,Why was claim CLM-2024-004 rejected?,"I don't have any information about the claim CLM-2024-004. Without knowing the specific policy details or claim history, I'm unable to provide a reason for rejection.
+
+If you could provide more context or information about the claim, such as the policy number or type of loss reported, I would be happy to try and assist you further.
+
+Alternatively, if you'd like, I can tell you that in general insurance claims are typically reviewed against specific policy sections or clauses that govern certain types of losses. For example:
+
+* Section 3.2 of our Commercial Liability Policy (CLP-2020) states th",1240.0,82,199,281,0.0,2,Inaccurate or insufficient information provided about the claim CLM-2024-004.
+F4-03,conversational,A1,A1_plain_llm,I need to lodge a new claim. My name is Alex Kim and my vehicle was damaged by hail yesterday.,"I'm happy to assist you with lodging a new claim. 
+
+To start the process, could you please provide me with some basic information? This will help me to verify your identity and get started on processing your claim.
+
+Can you please tell me:
+
+* Your vehicle's make, model, and year?
+* The Vehicle Identification Number (VIN) of your vehicle?
+* A description of the damage caused by the hail?
+
+Additionally, I'll need you to provide proof of ownership and identification. Please bring one of the following documents: a valid driver's license, passport, or state ID.
+
+Once I have this information, I can ",1094.1,92,172,264,0.6,2,The agent is providing an overly lengthy and bureaucratic response that fails to directly address the initial question about claim details.
+F4-04,conversational,A1,A1_plain_llm,Show me all my approved claims for motor insurance.,"I'm sorry, but without any prior context, I don't have access to your personal information or claims history.
+
+If you could provide me with your policy number and the year of purchase, I can try to assist you further. Alternatively, if you've already submitted a claim, I can guide you on how to check its status.
+
+Please note that our organization follows strict data protection policies, so we cannot access personal information without proper authorization.
+
+Would you like to proceed with providing your policy details or would you like me to explain the process of checking claims status in gene",757.3,80,115,195,0.0,2,"The response fails to return the approved claims as requested and instead prompts for policy details and authorization, providing no evidence of the claim history."
+MT-01,multi_turn,A1,A1_plain_llm,Yes they did. What information do I still need to provide to complete my claim?,"I'm going to have to ask for some additional information from you, Jordan.
+
+To complete your claim, I'll need the following:
+
+* The make and model of both vehicles involved in the collision
+* A brief description of the damage sustained by your vehicle (including any scratches or dents)
+* The estimated repair costs
+* The name, phone number, and insurance details of the at-fault driver
+* Any witness information (if applicable)
+
+Additionally, I'll need to schedule an inspection for your vehicle. Would you be available to have it inspected within the next 24-48 hours?
+
+(Please note that this is ge",956.8,175,144,319,0.4,3,"The expected response provided the required information for a motor collision claim, but lacked specific policy details and included additional unrelated questions."
+MT-02,multi_turn,A1,A1_plain_llm,"Yes, I've tarped the roof and kept all the receipts. What are my next steps and will the tarping cost be reimbursed?","Since I don't have specific policy details available for POL-HOME-2871, I'll provide general guidance.
+
+To proceed with your claim, please follow these steps:
+
+1. Notify your insurance company as soon as possible to report the damage.
+2. Keep all receipts related to temporary repairs and tarping, as you've mentioned.
+3. Document the damage with photographs or videos of the affected area.
+4. Wait for your insurer's guidance on the next course of action.
+
+Regarding reimbursement for the temporary tarping costs, it should be covered under your policy's emergency repair provisions (Section 5: Emer",1321.0,178,201,379,0.833,3,The actual response provided mostly correct guidance but lacked specific policy details and key instructions for the next steps in the claims process.
+F1-01,factual,A2,A2_text_only,What is the excess amount for a comprehensive motor insurance claim?,"According to Policy p. 18, Motor Vehicle Insurance Policy | Page 19, ""Your Cover / Motor Comprehensive Insurance"", there is no specific mention of the basic excess amount.
+
+However, on Policy p. 65, Page 66, it states: ""Types of excesses / Basic excess Your basic excess applies to all claims, whether you, someone else or something else caused the damage.""
+
+But, in Example 1 - Partial loss (Policy p. 10), it is mentioned that the basic excess amount for a comprehensive motor insurance claim is $1,350.
+
+So, according to this context, the excess amount for a comprehensive motor insurance claim is",7309.9,560,166,726,0.667,4,"The actual excess amount for a comprehensive motor insurance claim is not explicitly stated in the policy, but it can be inferred from context to be $1,350 based on examples and agreements within the policy."
+F1-02,factual,A2,A2_text_only,"Is windscreen damage covered, and is there an excess?","According to the provided policy sections:
+
+* The claim is for damage to your vehicle's windscreen (Policy p.29).
+* You have not already claimed for this benefit during the period of insurance.
+* Limit: One glass repair or replacement in your period of insurance.
+
+There is no mention of an excess being applicable to windscreen damage, unless you are entitled to the relevant 'Excess free glass extension' optional benefit (Policy p.7).",745.3,586,91,677,0.333,4,"The policy sections provide clear coverage information for windscreen damage under comprehensive motor, but the excess detail is partially missing and requires clarification on the 'Excess free glass extension' optional benefit."
+F1-03,factual,A2,A2_text_only,What home insurance events are excluded under the policy?,"According to Section 20 of the Household Insurance Policy (Page 21), the general exclusions are not explicitly stated as a single section. However, it is mentioned that ""The general exclusions shown"" are listed on Page 31.
+
+On Page 31, I found an itemized list of exclusions, which includes:
+
+* Sudden and accidental damage to buildings by external forces (e.g., lightning, explosions)
+* Wear and tear or gradual deterioration
+* Damage caused by war or military action
+* Nuclear radiation or contamination
+* Damage caused by vermin or rodents
+
+Additionally, according to Section 20 of the Household I",1477.6,489,214,703,0.667,4,"Mostly correct, with minor gaps and a need for further clarification on the exclusions list, but provides actionable information."
+F2-01,cross_modal,A2,A2_text_only,Here is a photo of damage to my car's rear bumper after a collision. Will this be covered?,"Based on the policy sections provided, it appears that third-party liability cover is included in your policy (Policy p.38).
+
+However, you are asking about damage to your vehicle itself, which falls under ""Cover for loss or damage to Your Vehicle"" as stated in Policy p.17.
+
+Unfortunately, since this is an accident involving your own vehicle and the damage occurred when you intentionally reversed it into a fence at home, the policy terms imply that your excess applies (Policy p.28). The repair costs of $500 are less than the applicable excess of $800, so according to the policy, the claim will ",1555.2,581,230,811,0.25,2,The AI assistant provided a partially correct but overly complicated response that failed to clearly state the outcome of the claim and why it was denied.
+F2-02,cross_modal,A2,A2_text_only,I have a photo of my ceiling which has water damage from a burst pipe. Is this covered?,"Based on the provided policy sections and context, it appears that you may be eligible for coverage under Flood or Rainwater Run-off.
+
+According to Policy p.8, Flood means the covering of normally dry land by water that has escaped or been released from the normal confines of any of the following:
+
+* a lake
+* a river
+* a creek
+* another natural watercourse
+
+In your case, it seems that the water damage to your ceiling is likely caused by a burst pipe, which would be considered Flood. However, you need to verify that the damage occurred due to water escaping from a normal confine (e.g., the pipe",1913.5,605,295,900,1.0,4,"The response is mostly correct, but it could benefit from further clarification on the policy details and a clearer explanation of how to proceed with submitting a claim."
+F2-03,cross_modal,A2,A2_text_only,Here is a photo showing crash damage to my vehicle on the highway. Is this covered under my policy?,"Based on the provided context, I can help you determine if the crash damage to your vehicle is covered under your policy.
+
+Firstly, please note that I'll assume you have a valid Motor Vehicle Insurance Policy (Policy p.20) issued by Medibank.
+
+According to Section 2 of your policy (Page 21), ""Your Cover"" includes loss or damage to your vehicle caused by an incident, such as:
+
+* Your vehicle is involved in a collision with another vehicle
+* Your vehicle catches fire
+* Someone steals your vehicle or damages it intentionally
+
+However, there's a specific exclusion mentioned in Section 4 of your po",2017.2,556,312,868,0.6,4,"The assistant mostly correctly states that the policy's exclusions might apply to crash damage on a highway, but fails to provide a clear answer without additional context."
+F2-04,cross_modal,A2,A2_text_only,Can you assess this vehicle damage from a collision? What would my claim cover?,"Based on the provided policy context, I can help answer your question.
+
+To assess whether your vehicle damage is covered under the collision incident, we need to review the following key sections of the policy:
+
+1. Section 2: ""Your Cover"" (Policy p.20)
+2. Section [undated]: ""Loss or Damage to Your Vehicle""
+
+According to Policy p.20, you are covered for loss or damage to your vehicle that is caused by an incident, such as:
+
+* Collision with another vehicle
+* Fire
+* Theft
+* Vehicular vandalism
+
+However, the policy does not explicitly mention collision damage as a separate entity.
+
+Assuming the d",2113.3,567,329,896,0.4,2,The response is mostly wrong or misleading because it fails to directly answer the question about collision damage coverage and instead provides a lengthy and confusing explanation of policy sections.
+F3-01,analytical,A2,A2_text_only,My car was rear-ended at traffic lights last night. What steps do I need to take to lodge a claim?,"To lodge a claim for your car after being rear-ended at traffic lights, follow these general steps:
+
+1.  **Gather information**: Take note of the following details:
+    *   The other vehicle's license plate number and make
+    *   The driver's contact information (name, phone number, and email)
+    *   The time and date of the incident
+    *   A description of any visible damage to both vehicles
+
+2.  **Document the accident**: Take clear photographs of:
+    *   The front and rear damage to your vehicle
+    *   Any damage to the other vehicle (if possible)
+    *   The scene where the incident o",1973.0,429,318,747,0.6,4,"The answer provides mostly correct steps for lodging a claim, but omits the specific time frame (within 24h) of notifying the insurer and includes additional general guidance beyond the expected response."
+F3-02,analytical,A2,A2_text_only,A storm has damaged my roof and rain has come through. What do I need to do right now?,"According to the policy (p.39), you are covered for damage caused by a storm, but only if it's not related to renovation work. However, the policy doesn't explicitly state what actions to take in case of such an incident.
+
+However, as per general practice and claims procedures, when a storm-related incident occurs, you should:
+
+1. Immediately contact the police (if a criminal act may have caused the loss or damage) and report the incident.
+2. Do everything you reasonably can to limit the loss or damage and stop more loss or damage from occurring.
+3. Keep detailed records of any actions taken, ",1552.6,892,224,1116,0.2,4,"Mostly correct, with minor gaps, as the AI assistant provides a general outline of what to do in case of a storm-related incident, but fails to provide explicit guidance from the policy and includes an outdated recommendation about notifying the insurance provider."
+F3-03,analytical,A2,A2_text_only,What steps do I need to follow to claim for a hospital stay?,"According to the Household Insurance Policy (p. 89), to lodge and assess your claim for a hospital stay, you must:
+
+1. Tell us about the incident and make a claim as soon as possible.
+2. If a police report has been completed, provide the incident number, where you made the report, and the officer's name.
+3. Provide information about and send us a copy of any notice, letter, claim writ, or summons against you relating to the incident.
+
+Additionally, the section on Claims (p. 60-61) explains that when making a claim, there are certain steps and responsibilities you need to take. It does not spec",1839.6,901,269,1170,0.167,2,"The actual steps provided are incomplete and do not accurately reflect the expected process for claiming a hospital stay, with significant gaps in information and incorrect emphasis on unrelated policy sections."
+F3-04,analytical,A2,A2_text_only,My laptop was stolen from my car — what do I do now?,"Based on the provided policy sections and claim IDs, it appears that you are a policyholder for your vehicle's motor insurance, which is the relevant coverage for theft of personal belongings in your vehicle. 
+
+According to Policy Section [P.16], if your laptop was stolen from your car overnight with evidence of forced entry into your vehicle, you need to report the incident to the police and provide the incident number and details of when and where the report was made.
+
+It's also mentioned in Policy Section [P.15] that if your Vehicle is stolen or lost during the Period of Insurance, we will ",1875.0,944,277,1221,0.5,4,The AI assistant provides mostly correct steps for filing a police report and contacting the insurer but lacks specific guidance on submitting an itemized claim and provides a clear explanation of relevant policy sections but seems to miss key details about Personal Effects Coverage.
+F3-05,analytical,A2,A2_text_only,How do I get my windscreen repaired under my policy?,"According to your Policy (p.18), if you contact Us prior to any repair or replacement work, We will arrange the repair or replacement through one of Our Partner Repairers unless You are entitled to the 'Any repairer option' optional benefit.
+
+To proceed with getting your windscreen repaired under your policy, I recommend the following steps:
+
+1. Contact us immediately to report the damage and confirm you'd like to make a claim.
+2. We will guide you through the process and provide instructions on how to arrange for repairs or replacement through one of Our Partner Repairers.
+3. Ensure that all ",1690.5,925,247,1172,0.6,2,The response partially corrects the expected answer but adds unnecessary steps and introduces additional requirements not mentioned in the expected answer.
+F4-01,conversational,A2,A2_text_only,What is the current status of claim CLM-2024-001?,"The current status of claim CLM-2024-001 for Sarah Chen is that it is in progress, as indicated by ""approved"" status. This means that the initial review and assessment of the claim have been completed, and the claim has not yet reached a final decision or payout.
+
+From general knowledge, an approved claim typically means that the claimant's damages meet the policy terms and conditions, and further investigation or repairs are required to determine the extent of the damage. However, without access to the claims file or further details, I can only confirm the status as ""approved"" from this conte",840.1,427,122,549,0.5,3,Claim status is partially correct but lacks key details about the investigation process beyond the 'approved' status.
+F4-02,conversational,A2,A2_text_only,Why was claim CLM-2024-004 rejected?,"To answer this question accurately, I would refer to the policy details and relevant claim sections. However, in this case, I can provide general information on common reasons why home insurance claims might be rejected.
+
+That being said, without specific information on the policy terms or conditions (e.g., Policy ID: XYZ 1234), I can only make an educated guess based on common scenarios.
+
+From what I see, Claim CLM-2024-004 was for a burst pipe incident in James Kowalski's home. A common reason why such claims might be rejected is if the cause of the damage is deemed preventable or not covere",1509.0,412,236,648,0.25,4,"Partially correct, missing key details"
+F4-03,conversational,A2,A2_text_only,I need to lodge a new claim. My name is Alex Kim and my vehicle was damaged by hail yesterday.,"I'd be happy to assist you with lodging a new claim.
+
+To get started, could you please provide me with the following information:
+
+1. Your vehicle's make, model, and year?
+2. A detailed description of the damage caused by the hail incident (e.g., roof, hood, doors, wheels)?
+3. Any relevant photos or videos of the damage?
+4. Your policy number (if you know it) or the type of coverage you have (e.g., comprehensive, collision)?
+
+Also, I'll need to check if there are any limitations or exclusions in your policy that may affect your claim.
+
+Please note that I don't see a record of a claim with CLM-",1477.8,434,234,668,0.8,4,"Correctly initiated claim process with a request for relevant information, but could benefit from referencing policy sections or specific claim IDs to determine the best course of action and provide more tailored guidance."
+F4-04,conversational,A2,A2_text_only,Show me all my approved claims for motor insurance.,"Based on the provided context, I can assist you with your query.
+
+According to the claims history provided, Sarah Chen has two approved claims for motor insurance:
+
+1. Claim CLM-2024-001: collision incident on 2024-11-03 (amount: $4,800.00)
+2. Claim CLM-2023-087: hail incident on 2023-11-27 (amount: $3,200.00)
+
+These claims have been approved and the amounts are reflected in the system.
+
+Please note that this information is specific to Sarah Chen's claim history and may not be comprehensive or up-to-date for other individuals. If you require information on any other individual, please let me k",995.4,416,148,564,1.0,5,The response accurately provides the approved claims for motor insurance with details on claim amounts and dates.
+MT-01,multi_turn,A2,A2_text_only,Yes they did. What information do I still need to provide to complete my claim?,"Thank you for providing that additional context, Jordan. According to your policy (p.89), we requested that you provide any additional information in a timely manner.
+
+Considering the circumstances, it seems that all essential details have been shared with us so far. However, I would like to request that you send us the following documentation as soon as possible:
+
+* Proof of ownership for your vehicle, such as receipts, invoices, photographs, valuations, or warranties (policy p.86)
+* A copy of the police report (if available) and any communication from the other driver or their insurer
+* Any ",1442.0,586,216,802,0.4,4,"The actual response provides additional requested information but lacks a clear statement of whether all necessary details have been shared, leading to minor gaps."
+MT-02,multi_turn,A2,A2_text_only,"Yes, I've tarped the roof and kept all the receipts. What are my next steps and will the tarping cost be reimbursed?","I see that your policy has specific requirements regarding out-of-pocket expenses and repairs. Since you obtained my agreement before incurring any costs (POLICY p.22), I'm happy to inform you that the temporary tarping of the affected area is reasonable.
+
+However, I need to review POLICY p.23 more closely to determine if you'll be reimbursed for the tarping cost. According to this section, I will decide whether to authorise and pay for the reasonable cost to repair your home after choosing a suitable repair method. In order to receive reimbursement, you may be required to provide receipts or ",1528.1,1033,219,1252,0.333,2,"The actual response provided mostly incorrect information about the claim process and failed to clearly state the next steps, instead requiring the policyholder to submit additional documentation."
+F1-01,factual,A3,A3_no_router,What is the excess amount for a comprehensive motor insurance claim?,"According to [POLICY p.65], the basic excess applies to all claims under the Motor Comprehensive Insurance policy. However, [POLICY p.8] also states that ""Your COI will show any excesses that apply to your policy."" Unfortunately, without the actual Certificate of Insurance (COI) document or more information about the specific policy Sarah Chen is insured on, I cannot provide the exact amount of her basic excess.
+
+However, based on [POLICY p.18], it is stated that ""Your Cover / Motor Comprehensive Insurance"" covers losses or damages to the vehicle for a certain amount, but does not explicitly m",4210.1,900,155,1055,0.667,4,The AI assistant provided mostly correct information about the standard excess for comprehensive motor insurance claims but lacked specific details due to missing context or policy information.
+F1-02,factual,A3,A3_no_router,"Is windscreen damage covered, and is there an excess?","According to the provided policy sections, the answer to your question is as follows:
+
+Yes, windscreen damage is specifically covered under the policy (P. 18). 
+
+However, since the claim amount exceeds the limit ($680.00), which is one glass repair or replacement per period of insurance, and there is no indication that the policyholder has already claimed for this benefit during the period of insurance, the claim would need to be reviewed further.
+
+Additionally, it's worth noting that the policy does not specify an excess for windscreen damage. However, as mentioned earlier, the claim amount e",1195.0,933,154,1087,0.667,4,"The response is mostly correct, but it doesn't explicitly state the excess amount for windscreen damage repairs."
+F1-03,factual,A3,A3_no_router,What home insurance events are excluded under the policy?,"According to Policy p.31 (Page 32), the general exclusions for home insurance include:
+
+* Events that occur outside of the insured address
+* Events that do not happen during the period of insurance
+* Damage caused by animals, but only up to the sum insured (Policy p.31)
+
+However, it's worth noting that Policy p.20 specifically states that homes under renovation are covered for 7 of the insured events, including those related to construction work.
+
+There is no specific list of excluded events provided in the policy, but we can infer from the excluded conditions mentioned above that any event th",1106.6,831,141,972,0.333,4,"The policy provides some general exclusions but lacks a comprehensive list of excluded events, and there is a specific exception for homes under renovation."
+F2-01,cross_modal,A3,A3_no_router,Here is a photo of damage to my car's rear bumper after a collision. Will this be covered?,"Based on the provided policy information, it appears that the policy covers third-party liability claims for loss or damage to property as a result of an incident caused by the use of your vehicle.
+
+The specific details of the claim would need to be reviewed to determine if your rear bumper damage falls under this category. However, without seeing the actual photo and the circumstances surrounding the collision, I can only provide general guidance.
+
+In general, if the collision was caused by another driver's negligence or carelessness, it's likely that the policy would cover the damages result",1874.2,925,266,1191,0.5,2,"Failed to provide clear and direct evidence that the policy covers collision damage, instead providing general guidance and requiring review of policy documents for specifics."
+F2-02,cross_modal,A3,A3_no_router,I have a photo of my ceiling which has water damage from a burst pipe. Is this covered?,"Based on the provided policy sections, it appears that your claim would fall under ""burst pipe incident"" rather than a flood-related incident (POLICY p.8). According to Policy p.102, a flood is defined as the covering of normally dry land by water that has escaped or been released from the normal confines of any of the following:
+
+* A lake
+* A river
+* A creek
+* An other natural watercourse
+* A reservoir, canal, or dam
+
+Since a burst pipe in your ceiling would not meet these criteria (it's not a body of water having escaped its natural confines), it would likely be considered an accidental brea",1744.8,945,246,1191,1.0,4,"Mostly correct with minor gaps, the assistant correctly identifies that sudden burst pipe water damage is typically covered under home insurance and properly cites policy sections, but may have missed key details regarding accidental breakage events."
+F2-03,cross_modal,A3,A3_no_router,Here is a photo showing crash damage to my vehicle on the highway. Is this covered under my policy?,"Based on the provided context and your question, I'll answer from general knowledge.
+
+The description of the damage in the insurance photo isn't explicitly mentioned, but we can infer it based on the claims history you've shared. The photograph likely shows some form of collision damage to your vehicle, possibly similar to the rear-end collision at traffic lights described in CLAIM CLM-2024-001 or the side impact collision at an intersection described in CLAIM CLM-2024-008.
+
+Given that the photo depicts a crash on the highway, I would say that it is likely covered under your policy. Your vehic",1557.1,955,214,1169,0.6,4,The response is mostly correct but lacks key details and fails to explicitly state the applicability of the policy's sections to the specific damage depicted in the photo.
+F2-04,cross_modal,A3,A3_no_router,Can you assess this vehicle damage from a collision? What would my claim cover?,"Based on the provided context and Claim CLM-2024-001, I can assess that the vehicle was rear-ended at traffic lights on Pacific Motorway. According to Policy p.20, ""Loss or damage to your vehicle"" is included for ""Collision with another vehicle"".
+
+The claim describes damage to:
+
+* Rear bumper
+* Boot lid
+* Tailgate sensors
+
+These types of damage are typically covered under a collision incident in a motor vehicle insurance policy.
+
+According to the policy, the claim amount for this incident would be $4,800.00, which is specified in Claim CLM-2024-001.
+
+It's worth noting that the driver side door",1326.0,972,184,1156,0.6,5,"The response fully assesses the vehicle damage from a collision and accurately describes what is covered under the comprehensive motor insurance policy, providing a clear explanation of the claim amount."
+F3-01,analytical,A3,A3_no_router,My car was rear-ended at traffic lights last night. What steps do I need to take to lodge a claim?,"Based on the provided policy sections and claim examples, here are the steps you should take to lodge a claim for your car that was rear-ended at traffic lights:
+
+1. **Tell us about the incident**: Inform RACQ Insurance as soon as possible after receiving any summons related to the incident (Policy p. 62).
+2. **Provide additional information requested by RACQ Insurance**: Cooperate with RACQ Insurance by providing any requested information in a timely manner.
+3. **Notify RACQ Insurance about an accident report**: If you have completed a police report, provide the:
+	* Incident number
+	* Where t",2376.1,913,354,1267,0.8,4,"The expected answer included step 3 (File police report if required) which was not present in the actual response, but it was mentioned that a police report should be provided with certain details."
+F3-02,analytical,A3,A3_no_router,A storm has damaged my roof and rain has come through. What do I need to do right now?,"Based on the policy, Section [POLICY p. 39] mentions that damage to free-standing walls is not covered. However, it does mention that you're not covered for loss or damage to lawns or grass.
+
+You're concerned about water entering your home after a storm, which suggests that there might be flood or storm-related issues. According to Section [POLICY p. 0], flood and storm are both covered under the policy, but with certain exclusions.
+
+Since your roof is damaged, it's likely that the water ingress you're experiencing is related to this incident. However, I need more information to provide a defi",1853.1,892,268,1160,0.0,3,"The response provides partially correct steps but fails to directly address the immediate concerns of safety and water ingress, instead focusing on policy exclusions and requiring additional information."
+F3-03,analytical,A3,A3_no_router,What steps do I need to follow to claim for a hospital stay?,"According to the policy, when making a claim for a hospital stay, you must:
+
+1. Tell us about the incident and make a claim as soon as possible.
+2. Provide information about the police report (if completed) including:
+	* Incident number
+	* Where the report was made
+	* Officer's name
+3. Send us a copy of any notice, letter, claim writ or summons against you relating to the incident.
+
+Additionally, it is noted that if you need to make a claim for an accident-related hospital stay, your 1-day or 2-month Accident Waiting Period may be waived (Section [POLICY p.1] within 2 months of leaving your pr",1455.1,901,196,1097,0.167,2,"The expected response provided a step-by-step guide to claiming for a hospital stay, while the actual response did not and instead provided unrelated information about police reports, notices, and accident waiting periods."
+F3-04,analytical,A3,A3_no_router,My laptop was stolen from my car — what do I do now?,"Based on the provided policy sections, a claim has already been submitted for this incident (CLAIM CLM-2024-003 for Priya Nair). According to the policy section ""Your Vehicle if the items are stolen from Your locked Vehicle or from a locked tool box that is fitted to Your Vehicle and there must be evidence of forced entry into Your Vehicle or locked tool box"", it appears that your laptop was likely stolen from your vehicle, which meets this condition.
+
+Since a claim has already been submitted and approved for this incident (Amount: $28,000.00), the next step would be to contact Medibank's clai",1101.2,944,140,1084,0.167,4,The response is mostly correct but lacks clarity on what specific details should be discussed with Medibank's claims department regarding the already submitted and approved claim.
+F3-05,analytical,A3,A3_no_router,How do I get my windscreen repaired under my policy?,"To get your windscreen repaired under your policy, you need to contact Us prior to any repair or replacement work and allow Us to arrange the repair or replacement through one of Our Partner Repairers (section [POLICY p.18]). 
+
+You can do this by:
+
+* Contacting our claims team directly via phone or email
+* Logging into My Medibank online and submitting a claim
+* Using the Medibank app to submit a claim
+
+Once you've submitted your claim, We will assess whether the damage meets the policy terms (section [POLICY p.29]) and decide whether to authorise and pay for the reasonable cost of repair or r",1736.2,925,247,1172,0.6,3,"The actual answer provides more detail on the process and requirements for claiming windscreen repair under policy terms, but still lacks key information such as the application of no excess for comprehensive cover."
+F4-01,conversational,A3,A3_no_router,What is the current status of claim CLM-2024-001?,"According to the information provided, Claim CLM-2024-001 for Sarah Chen is currently in the ""approved"" status with an amount of $4,800.00.
+
+I couldn't find any information that suggests a change in status or any updates on this claim beyond its initial approval. If you need further details about the claim's history or any recent developments, I would recommend checking with our claims department or reviewing the claim file directly.",839.8,939,90,1029,0.5,2,"Claim CLM-2024-001 for Sarah Chen is incorrectly reported as having a settlement of $4,800.00 when the correct information provided is $4,050 after $750 excess."
+F4-02,conversational,A3,A3_no_router,Why was claim CLM-2024-004 rejected?,"Based on the provided context, I found that claim CLM-2024-004 for James Kowalski is related to a home insurance policy, specifically a burst pipe incident. According to the Policy (p.3), the issuer's contact information and relevant sections are included.
+
+Unfortunately, I couldn't find a specific reason for rejecting claim CLM-2024-004 within the provided context. However, I can suggest that this information might be available in the Policy or Claim documentation itself.
+
+If you need to know the exact reason for rejection, it would likely be found under ""Changes to your circumstances"" (secti",1833.2,839,237,1076,0.25,4,"Mostly correct, with minor gaps in the provided context that make it difficult to determine the exact reason for rejection."
+F4-03,conversational,A3,A3_no_router,I need to lodge a new claim. My name is Alex Kim and my vehicle was damaged by hail yesterday.,"To proceed with lodging your new claim, you will need to contact us as soon as possible.
+
+Please provide the following details for your claim:
+
+* Vehicle make, model, registration number
+* Date of incident (yesterday)
+* Description of damage caused by hail
+
+Additionally, please be truthful and frank in any statement you make in connection with a claim. This is stated on policy p.22, section 4.
+
+We can arrange towing for your vehicle after an incident, as per policy p.22, section 2. We may also need to inspect your vehicle and arrange quotations from any repairer or supplier.
+
+You can lodge you",1670.5,924,225,1149,1.0,4,"The AI assistant provides general claim details and informs Alex Kim about the process, but lacks specific questions to collect claim details such as policy number, incident date, vehicle details, and damage description."
+F4-04,conversational,A3,A3_no_router,Show me all my approved claims for motor insurance.,"To provide you with the list of your approved motor insurance claims, I've checked the policy details and claim records.
+
+Based on the information provided, you have the following approved motor insurance claims:
+
+1. **CLAIM CLM-2024-001**: Claim CLM-2024-001 for Sarah Chen: motor insurance, collision incident on 2024-11-03.
+	* Status: Approved
+	* Amount: $4,800.00
+	* Incident details: Rear-ended at traffic lights on Pacific Motorway, damage to rear bumper, boot lid, and tailgate sensors.
+2. **CLAIM CLM-2023-087**: Claim CLM-2023-087 for Sarah Chen: motor insurance, hail incident on 2023-11-27",2297.1,842,330,1172,1.0,4,"The actual output correctly lists approved motor insurance claims (CLM-2024-001 and CLM-2023-087) but also includes an unrelated claim (CLM-2024-003 for theft), which is not requested by the query."
+MT-01,multi_turn,A3,A3_no_router,Yes they did. What information do I still need to provide to complete my claim?,"Thank you for providing that additional context, Jordan. Based on our policy and previous claims, I've noted the following:
+
+To proceed with your claim, POL-MOTOR-1042, I would like to request some further details from you.
+
+As we already have confirmation of contact with the other party, let's focus on gathering proof of ownership for your vehicle. Could you please provide me with any of the following documents:
+
+1. Vehicle registration (V5 or equivalent)
+2. Proof of insurance certificate
+3. Any recent service records or MOT certificates
+
+Additionally, since there was damage to your rear bump",1590.4,927,212,1139,0.8,4,"The expected answer provided a clear list of required information, but the actual answer included additional details about vehicle ownership proof and repair options that were not explicitly mentioned in the original prompt."
+MT-02,multi_turn,A3,A3_no_router,"Yes, I've tarped the roof and kept all the receipts. What are my next steps and will the tarping cost be reimbursed?","Given that you have obtained our agreement in principle for out-of-pocket expenses and have provided receipts for the temporary tarping of your roof, we can consider reimbursing these costs.
+
+According to policy section [POLICY p.22], out-of-pocket expenses incurred prior to obtaining our approval will be paid only as reasonable costs. Since you've obtained our agreement before incurring these costs, the amount you'll receive for reimbursement is subject to what are deemed ""reasonable costs.""
+
+To determine this, we can refer to the 'How We settle Your claim' and 'Choosing a repairer' sections ",1643.5,1033,217,1250,0.5,4,"The response correctly identified the need for receipts and the reimbursement process but missed providing a clear outline of next steps, including an assessor inspection and photographing visible damage."
+F1-01,factual,A4,A4_full_agent,What is the excess amount for a comprehensive motor insurance claim?,"According to Policy p.18, Motor Vehicle Insurance Policy, | Page 19, ""Your Cover"" section, there is no specific mention of an excess amount for a comprehensive motor insurance claim.
+
+However, I can tell you that according to Policy p.65, the basic excess applies to all claims, whether you, someone else or something else caused the damage. The policy also mentions that your COI will show the type and amount of excesses that apply to your policy.
+
+In Example 1 (Policy p.10), it is mentioned that your car's basic excess is $1,350.
+
+Therefore, for a comprehensive motor insurance claim, the excess",1154.5,560,161,721,0.667,4,"The answer partially correct because it initially states there is no specific mention of an excess amount for a comprehensive motor insurance claim but later clarifies that the basic excess applies to all claims and is $1,350."
+F1-02,factual,A4,A4_full_agent,"Is windscreen damage covered, and is there an excess?","According to the policy (specifically section p.29), windscreen damage is indeed covered, as it falls under ""damage to your vehicle's windscreen, window glass or sunroof glass"".
+
+However, I need to clarify that the question asks about the Excess, not the coverage itself. According to policy section p.7, Comprehensive coverage does include an Excess for windscreen, window glass, sunroof, and moonroof damage, only if you are entitled to the relevant ""Excess free glass extension"" optional benefit.
+
+So, in summary: Windscreen damage is covered under Comprehensive coverage, but there may be an Exce",1071.4,586,148,734,0.667,4,"The AI assistant is mostly correct in stating that windscreen damage is covered under Comprehensive motor insurance, but fails to specify the potential Excess associated with it and its dependency on the optional benefit."
+F1-03,factual,A4,A4_full_agent,What home insurance events are excluded under the policy?,"According to Policy p. 31 (Page 32), Home and Contents Insurance, a summary of the exclusions is shown in a table, although it does not explicitly list all excluded events.
+
+Instead, the policy mentions that there are ""general exclusions"" mentioned on page [number] (not provided in the context). However, the only specific exclusion mentioned in the context is for homes under renovation:
+
+""You are covered for: 
+Homes under renovation where there are changes to external walls, roof or flooring. We will only cover you for 7 of the insured events under the ‘What we cover when you’re renovating you",1271.9,489,180,669,0.333,3,"The policy does not fully address the expected exclusions, but mentions a limitation on renovations and a specific exclusion for homes under renovation."
+F2-01,cross_modal,A4,A4_full_agent,Here is a photo of damage to my car's rear bumper after a collision. Will this be covered?,"Based on the provided policy context, I can answer your question.
+
+The policy clearly states that Third Party Liability cover protects against claims made by third parties for loss or damage to their property as a result of an incident caused by the use of your vehicle (Policy p. 38). However, it does not explicitly provide coverage for damage to your own vehicle, such as the rear bumper in your case.
+
+Although Section 17 mentions that if your vehicle is damaged and cannot be driven due to an incident, the insurer will cover towing costs from the scene of the incident to a repairer or other re",2038.3,581,293,874,0.75,3,"Partially correct, missing key details in the expected response, but provides relevant context and explanation of policy terms."
+F2-02,cross_modal,A4,A4_full_agent,I have a photo of my ceiling which has water damage from a burst pipe. Is this covered?,"Based on the provided context, it appears that the policy covers ""Flood"" as defined in section [POLICY p.8], which includes the covering of normally dry land by water that has escaped or been released from the normal confines of certain natural watercourses.
+
+In your case, a burst pipe would likely cause water to escape into your home, leading to water damage on ceilings and other surfaces. Given this scenario, it is likely that the water damage to your ceiling is covered under the ""Flood"" section of the policy.
+
+However, I'd like to note that there might be some additional factors to consider",2041.8,605,298,903,1.0,4,"The response provides a correct analysis of the policy and suggests additional steps for the user to take, but it could benefit from more specific details about the exclusion of gradual leaks and the importance of contacting the insurance company directly."
+F2-03,cross_modal,A4,A4_full_agent,Here is a photo showing crash damage to my vehicle on the highway. Is this covered under my policy?,"To determine if the damage in the provided insurance photo is covered under your policy, we need to examine Policy p.20, Section 3.
+
+According to Section 3 of the policy, you are covered for ""Loss or damage to your vehicle that is caused by an incident, for example: 
+
+*   Your vehicle is involved in a collision with another vehicle,
+*   Your vehicle catches fire,
+*   Someone steals your vehicle, 
+*   Your veh (note: it seems there's a typo, but I'll assume it means 'your vehicle')
+
+However, the policy also states that you are not covered for:
+
+*   Loss or damage to any hire car
+*   If your veh",1974.3,608,293,901,0.4,3,"The expected response correctly identified the policy coverage and provided an initial assessment, but it failed to fully address the request for supporting documentation and relevant details about the incident."
+F2-04,cross_modal,A4,A4_full_agent,Can you assess this vehicle damage from a collision? What would my claim cover?,"Based on the provided policy context, I can assess that the incident involves a collision between two vehicles.
+
+According to Policy p. 22, ""Car"" section, your vehicle cover includes:
+
+* Loss or damage to your vehicle that is caused by an incident, for example:
+	+ Your vehicle is involved in a collision with another vehicle
+	+ Your vehicle catches fire
+	+ Someone steals your vehicle
+
+It appears that the collision between two vehicles would be covered under this section. However, it's essential to note that specific terms and conditions may apply.
+
+To determine whether your claim will be approv",1204.8,567,170,737,0.4,3,"The response is mostly correct, but lacks key details to fully assess the claim and determine its coverage under the policy."
+F3-01,analytical,A4,A4_full_agent,My car was rear-ended at traffic lights last night. What steps do I need to take to lodge a claim?,"According to our internal guidelines (Section 2.5 of the Motor Insurance Policy CLM-0001), if you are involved in a collision, you must notify us within 30 days of the incident and provide evidence of the damage.
+
+To lodge a claim, please follow these steps:
+
+1. Take photographs of the damaged vehicle from multiple angles.
+2. Gather witness statements (if available) and contact information.
+3. Provide your policy details (policy number, premium payment history, etc.) to our claims department via phone or email.
+4. Complete a Claim Notification Form (available on our website or through our mobi",2203.8,429,344,773,0.6,2,"The actual response provides unnecessary steps and information not requested by the user, including a claim status check and repair appointment scheduling, whereas the expected response only lists the required steps to lodge a claim."
+F3-02,analytical,A4,A4_full_agent,A storm has damaged my roof and rain has come through. What do I need to do right now?,"Based on the policy and claim context provided, for a storm-related incident that caused damage to your roof, you are covered under the Storm section of your policy (Policy p. 0).
+
+According to Policy p. 88, When an incident occurs, What you need to do:
+
+1. Immediately contact the police if a criminal act may have caused the loss or damage and tell us where you made the report, the police officer’s name, and the incident number.
+2. Do everything you reasonably can to limit the loss or damage and stop more loss or damage.
+
+In this case, since it's a storm-related incident with roof damage and r",1787.4,892,255,1147,0.0,4,"The response is mostly correct, but it misses the expected steps and provides additional guidance beyond what was asked."
+F3-03,analytical,A4,A4_full_agent,What steps do I need to follow to claim for a hospital stay?,"Based on the provided policy sections and claim IDs, here are the steps you need to follow to claim for a hospital stay:
+
+According to Section 04 of the Household Insurance Policy (Page 87), when making a claim under your policy, the following steps apply:
+
+1. Tell us about the incident and make a claim as soon as possible.
+2. If a police report has been completed, provide the:
+	* Incident number
+	* Where you made the report
+	* Officer's name (Section 04 of the Household Insurance Policy)
+3. Provide information about and send us a copy of any notice, letter, claim writ, or summons against you ",2577.3,901,391,1292,0.167,4,The expected answer provided most of the correct steps but lacked specificity and included irrelevant information about policy sections and claim IDs.
+F3-04,analytical,A4,A4_full_agent,My laptop was stolen from my car — what do I do now?,"Based on the provided policy sections and claim information, it appears that your situation is covered under the vehicle theft section of the policy (Policy p. 16).
+
+As per the policy, if items are stolen from a locked vehicle or tool box with evidence of forced entry, you must report the incident to the police and provide proof to us.
+
+In this case, since your laptop was stolen from your car, which is considered a locked vehicle, you can proceed by:
+
+1. Reporting the incident to the police (QP2024-1187) immediately.
+2. Providing us with evidence of the theft, including:
+	* The police report n",1593.7,944,231,1175,0.5,4,"The expected response provided general steps for filing a claim after a laptop was stolen from a car, while the actual response correctly identified the policy section and provided specific steps with required documentation."
+F3-05,analytical,A4,A4_full_agent,How do I get my windscreen repaired under my policy?,"To initiate the process of getting your windscreen repaired under your policy, please contact us prior to any repair or replacement work. You can:
+
+* Allow Us to arrange the repair or replacement through one of Our Partner Repairers (as per Policy p.18).
+* If you are entitled to the 'Any repairer option' optional benefit, proceed with getting the windscreen repaired by a third-party repairer that you choose.
+
+Please ensure that:
+
+* You contact us prior to any repair or replacement work.
+* The damage is only for your vehicle's windscreen, window glass, or sunroof glass (as per Policy p.29).
+* Y",1456.1,925,206,1131,0.6,3,"The actual response provides some relevant guidance but lacks key details, such as the application of no excess for windscreen repair under comprehensive cover and a clear directive to contact the insurer before any repair work."
+F4-01,conversational,A4,A4_full_agent,What is the current status of claim CLM-2024-001?,"According to the provided context, the current status of Claim CLM-2024-001 for Sarah Chen is that it has been approved.",301.8,427,29,456,0.5,4,"The actual response provided is mostly correct but lacks the specific settlement amount, only stating that it has been approved."
+F4-02,conversational,A4,A4_full_agent,Why was claim CLM-2024-004 rejected?,"Based on the provided context, I found that Claim CLM-2024-004 for James Kowalski's home insurance claim regarding a burst pipe incident was rejected with an amount of $6,200.00.
+
+Unfortunately, without specific details about the reason for rejection, I couldn't directly cite a policy section or claim ID to support my answer. However, I can provide general information based on common reasons for rejecting similar claims.
+
+Typically, home insurance policies may have provisions that exclude damage caused by maintenance-related issues or maintenance-related failures (e.g., burst pipes). If the ki",1688.9,412,263,675,0.25,2,"Claim rejection explanation is largely incorrect and lacks specific details, providing only general information without citing policy sections or claim IDs."
+F4-03,conversational,A4,A4_full_agent,I need to lodge a new claim. My name is Alex Kim and my vehicle was damaged by hail yesterday.,"I'd be happy to assist you with lodging a new claim.
+
+To begin, could you please provide me with the following information:
+
+* Your motor insurance policy details (e.g., policy number, effective date)
+* A detailed description of the hail incident that occurred yesterday
+* Any supporting documentation, such as photos of the damage or witness statements (if applicable)
+* The VIN (Vehicle Identification Number) of your vehicle
+
+Once I have this information, I can assist you with lodging a new claim and determine the next steps.
+
+As for your policy, could you please check if your policy has any ha",1047.0,434,156,590,1.0,2,"The agent asks for policy details but does not directly ask about the policy number, incident date, vehicle details, and damage description as expected."
+F4-04,conversational,A4,A4_full_agent,Show me all my approved claims for motor insurance.,"Based on the provided context, I can show you the approved claims for Sarah Chen's motor insurance.
+
+According to our records, Sarah Chen has two approved claims:
+
+1. CLM-2024-001: Motor collision incident on 2024-11-03 (approved status)
+	* Description of damage: Rear bumper, boot lid, and tailgate sensors
+2. CLM-2023-087: Hail incident on 2023-11-27 (approved status)
+	* Description of damage: Denting to bonnet, roof, and boot lid",825.4,416,117,533,1.0,4,"The response is mostly correct, but it would be more helpful if it provided a more user-friendly format for the approved claims instead of listing them in a detailed format."
+MT-01,multi_turn,A4,A4_full_agent,Yes they did. What information do I still need to provide to complete my claim?,"Jordan, according to Section 5 of your policy, we requested that you provide proof of ownership and any communications related to the incident.
+
+To complete your claim, could you please provide us with:
+
+1. The driver's license details and vehicle registration numbers of the other party involved in the accident.
+2. Photographs or evidence of the damage to both vehicles (your vehicle and the other party's vehicle).
+3. A police report number (if obtained) or any incident reports filed by either vehicle.
+4. Any correspondence you've received regarding the incident, including letters, emails, or o",1254.7,586,172,758,0.8,4,The response partially corrects the actual output by reiterating some of the requested information but incorrectly adds additional requirements and fails to mention proof of ownership.
+MT-02,multi_turn,A4,A4_full_agent,"Yes, I've tarped the roof and kept all the receipts. What are my next steps and will the tarping cost be reimbursed?","I've noted your storm damage and temporary tarping efforts.
+
+Given that you obtained Our agreement beforehand to incur out-of-pocket expenses (Policy p.22), we should be able to reimburse the reasonable costs for the tarping. 
+
+However, it's essential to check if our chosen repairer has necessary licences and authorisations required by law, as stated in Policy p.23. You'll need to provide receipts for the tarping and arrange a meeting with our assigned adjuster to assess the damage.
+
+Also, please be aware that you are subject to a basic excess of $850 (Policy p.8). 
+
+I will schedule an appoint",1390.4,1033,186,1219,0.667,4,The expected response was mostly correct with minor gaps in providing specific details and instructions on how to submit receipts for tarping expenses and checking the repairer's licenses.

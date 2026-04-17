@@ -119,32 +119,46 @@ def ingest_policies(client: chromadb.PersistentClient, model: SentenceTransforme
         metadata={"hnsw:space": "cosine"},
     )
     existing = set(collection.get()["ids"])
- 
-    pdf_files = list(POLICY_DIR.glob("*.pdf"))
-    if not pdf_files:
-        print("   No PDFs found in data/policy_docs/ — add policy PDFs and re-run.")
-        print("   Download sample PDFs from: NRMA, Allianz, RACQ, Medibank websites.")
-        return
-    
-    print(f"\n Indexing {len(pdf_files)} policy PDFs...")
 
-    for pdf_path in tqdm(pdf_files, desc="PDFs"):
-        doc = fitz.open(pdf_path)
-        policy_id = pdf_path.stem                   # filename without extension
-        insurer   = _guess_insurer(pdf_path.name)
-        ins_type  = _guess_insurance_type(pdf_path.name)
- 
-        for page_num, page in enumerate(doc):
-            page_text = page.get_text()
+    # Accept PDFs and plain-text documents (e.g. claims_procedures.txt)
+    all_files = sorted(
+        list(POLICY_DIR.glob("*.pdf"))
+        + list(POLICY_DIR.glob("*.txt"))
+        + list(POLICY_DIR.glob("*.md"))
+    )
+    if not all_files:
+        print("   No policy documents found in data/policy_docs/")
+        print("   Add PDFs (NRMA, RACQ, etc.) or .txt/.md procedure guides and re-run.")
+        return
+
+    print(f"\n  Indexing {len(all_files)} policy documents...")
+
+    for doc_path in tqdm(all_files, desc="Policy docs"):
+        policy_id = doc_path.stem
+        insurer   = _guess_insurer(doc_path.name)
+        ins_type  = _guess_insurance_type(doc_path.name)
+
+        # Produce a list of (page_num, text) pairs for uniform downstream handling
+        if doc_path.suffix == ".pdf":
+            pages: list[tuple[int, str]] = [
+                (page_num, page.get_text())
+                for page_num, page in enumerate(fitz.open(doc_path))
+            ]
+        else:
+            # .txt / .md: treat the whole file as page 0
+            raw = doc_path.read_text(encoding="utf-8", errors="ignore")
+            pages = [(0, raw)]
+
+        for page_num, page_text in pages:
             if not page_text.strip():
                 continue
- 
+
             chunks = chunk_text(page_text)
             for chunk_idx, chunk in enumerate(chunks):
                 doc_id = f"{policy_id}_p{page_num}_c{chunk_idx}"
                 if doc_id in existing:
                     continue
-                    
+
                 embedding = model.encode(chunk).tolist()
                 collection.add(
                     ids=[doc_id],
@@ -156,7 +170,7 @@ def ingest_policies(client: chromadb.PersistentClient, model: SentenceTransforme
                         "insurance_type":  ins_type,
                         "page_number":     page_num,
                         "chunk_index":     chunk_idx,
-                        "source_file":     pdf_path.name,
+                        "source_file":     doc_path.name,
                     }],
                 )
 

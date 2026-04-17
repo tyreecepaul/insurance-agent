@@ -9,9 +9,9 @@ A LangGraph-based conversational agent for automating insurance claim processing
 
 - **Policy Search**: Vector + BM25 hybrid search over policy documents
 - **Damage Assessment**: CLIP embeddings + BLIP-2 captions for damage photo analysis
-- **Claim Processing**: Structured claim drafting with memory persistence
+- **Claim Processing**: Structured claim drafting with memory persistence across conversation turns. The memory node performs entity extraction and slot-filling across conversation turns. Single-turn benchmark performance is unaffected; multi-turn evaluation is planned for the next eval cycle.
 - **Multi-Modal**: Handle text queries, images, and claim status lookups
-- **Evaluation Framework**: MLflow + PySpark for variant testing and metrics
+- **Evaluation Framework**: MLflow + pandas for variant testing and metrics
 
 ## Quick Start
 

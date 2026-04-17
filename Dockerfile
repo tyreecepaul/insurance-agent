@@ -17,18 +17,16 @@
 FROM python:3.11-slim
 
 # System dependencies:
-#   - openjdk-17-jre-headless  → PySpark (eval harness)
-#   - libglib2.0-0             → PyMuPDF (PDF parsing)
-#   - libgomp1                 → PyTorch (OpenMP threading)
-#   - curl                     → Docker healthcheck probe
+#   - libglib2.0-0  → PyMuPDF (PDF parsing)
+#   - libgomp1      → PyTorch (OpenMP threading)
+#   - curl          → Docker healthcheck probe
+# Java (openjdk) is NOT installed — PySpark has been replaced with pandas
+# for local aggregation. If you re-introduce PySpark, add openjdk-17-jre-headless here.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        openjdk-17-jre-headless \
         libglib2.0-0 \
         libgomp1 \
         curl \
     && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 WORKDIR /app
 

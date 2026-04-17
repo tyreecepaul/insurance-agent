@@ -28,7 +28,7 @@ pydantic>=2.0.0                  # data validation for claim records
 
 # eval
 langchain-ollama>=0.1.0          # LLM-as-judge calls
-pyspark>=3.5.0                   # results aggregation (local mode — no cluster needed)
+pandas>=2.0.0                    # results aggregation (replaces PySpark for local runs)
 mlflow>=2.13.0                   # experiment tracking + UI at localhost:5000
 
 # sql analytics
