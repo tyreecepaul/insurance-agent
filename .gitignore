@@ -62,9 +62,7 @@ coverage.xml
 *.h5
 weights/
 models/
-data/claims_data/claims.json        # Or if this is sample data, remove this line
-data/policy_docs/*.pdf              # Don't commit PDFs (too large)
-data/damage_photos/                 # Don't commit images
+data/
 
 # ChromaDB (local vector DB)
 chroma_db/
