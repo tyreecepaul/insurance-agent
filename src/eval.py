@@ -16,6 +16,8 @@ Usage:
     mlflow ui                                    # view results at localhost:5000
 """
 
+from __future__ import annotations
+
 import os
 import sys
 
@@ -32,7 +34,6 @@ import mlflow
 import pandas as pd
 import ollama
 from dotenv import load_dotenv
-from pyspark.sql import SparkSession
 
 from src.tools import search_policy, search_damage, search_claims
 from src.agent import SYSTEM_PROMPT as AGENT_SYSTEM_PROMPT
@@ -735,7 +736,7 @@ def aggregate_results(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.
     return variant_summary, family_breakdown, cross_modal_gap
 
 
-def build_spark_df(results: list[EvalResult], spark_session: SparkSession) -> pd.DataFrame:
+def build_spark_df(results: list[EvalResult], spark_session: "SparkSession") -> pd.DataFrame:
     """
     Convert a list of EvalResult objects to a pandas DataFrame.
     
