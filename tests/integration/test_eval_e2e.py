@@ -109,11 +109,11 @@ class TestEvalDataFrame:
         
         df = build_spark_df(results, spark_session)
         
-        assert df.count() == 2
+        assert len(df) == 2  # pandas DataFrame uses len(), not count()
         assert len(df.columns) == 13
     
     def test_aggregate_results(self, spark_session):
-        """Test PySpark aggregation of results."""
+        """Test aggregation of results."""
         results = [
             # A1 results
             EvalResult("T1", "factual", "A1", "baseline", "q1", "r1", 100.0, 50, 15, 65, 1.0, 5, "good"),
@@ -126,8 +126,8 @@ class TestEvalDataFrame:
         df = build_spark_df(results, spark_session)
         variant_summary, family_breakdown, cross_modal_gap = aggregate_results(df)
         
-        # Check variant summary
-        summary_rows = variant_summary.collect()
+        # Check variant summary (now pandas DataFrame)
+        summary_rows = variant_summary if isinstance(variant_summary, list) else variant_summary.to_dict('records')
         assert len(summary_rows) == 2  # A1 and A4
         
         a1_row = [r for r in summary_rows if r["variant_key"] == "A1"][0]
@@ -148,7 +148,7 @@ class TestEvalDataFrame:
         df = build_spark_df(results, spark_session)
         _, family_breakdown, _ = aggregate_results(df)
         
-        fb_rows = family_breakdown.collect()
+        fb_rows = family_breakdown if isinstance(family_breakdown, list) else family_breakdown.to_dict('records')
         families = {row["family"] for row in fb_rows}
         
         assert "factual" in families
