@@ -265,10 +265,12 @@ def _get_blip2():
         # use_fast=False to avoid breaking changes in image processor
         processor = Blip2Processor.from_pretrained(model_name, use_fast=False)
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Gate float16 on CUDA; CPU-only envs must use float32 to avoid dtype/device mismatch
+        torch_dtype = torch.float16 if device == "cuda" else torch.float32
         # BLIP-2 doesn't support load_in_8bit; use basic initialization
         blip_model = Blip2ForConditionalGeneration.from_pretrained(
             model_name,
-            torch_dtype=torch.float16,
+            torch_dtype=torch_dtype,
         )
         blip_model = blip_model.to(device)
         _BLIP2 = (processor, blip_model, device)
@@ -387,7 +389,8 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
     # No need to pre-load here; the cache ensures "load once, reuse" behavior.
 
     for img_path in tqdm(images, desc="Images"):
-        doc_id = img_path.stem
+        # Use relative path to ensure uniqueness across subdirectories (vehicle/car_01.jpg vs property/car_01.jpg)
+        doc_id = str(img_path.relative_to(DAMAGE_DIR)).replace("\\", "/").replace(".", "_")
         if doc_id in existing:
             continue
 

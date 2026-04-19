@@ -50,9 +50,16 @@ vision_llm = ChatOllama(
 
 
 def _encode_image_b64(image_path: str) -> str | None:
+    """Encode image as data URI with correct MIME type based on file extension."""
     try:
+        import mimetypes
+        mime_type, _ = mimetypes.guess_type(image_path)
+        if mime_type is None:
+            mime_type = "image/jpeg"  # Fallback for unknown types
+        
         with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
+            b64_data = base64.b64encode(f.read()).decode("utf-8")
+        return f"data:{mime_type};base64,{b64_data}"
     except (FileNotFoundError, OSError) as e:
         print(f"[generator] could not read image {image_path}: {e}")
         return None
@@ -327,12 +334,12 @@ def generator_node(state: AgentState) -> AgentState:
 
     # Vision path — send the actual image to LLaVA alongside policy context
     if query_type == "cross_modal" and image_path:
-        image_b64 = _encode_image_b64(image_path)
-        if image_b64:
+        image_data_uri = _encode_image_b64(image_path)
+        if image_data_uri:
             system = SystemMessage(content=VISION_SYSTEM_PROMPT)
             context_msg = HumanMessage(content=[
                 {"type": "text", "text": f"RETRIEVED CONTEXT:\n\n{context_str}{draft_str}"},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
+                {"type": "image_url", "image_url": {"url": image_data_uri}},
             ])
             response = vision_llm.invoke([system, context_msg] + recent_messages)
             return {"messages": [response]}
