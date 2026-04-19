@@ -736,7 +736,7 @@ def aggregate_results(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.
     return variant_summary, family_breakdown, cross_modal_gap
 
 
-def build_spark_df(results: list[EvalResult], spark_session: "SparkSession") -> pd.DataFrame:
+def build_spark_df(results: list[EvalResult]) -> pd.DataFrame:
     """
     Convert a list of EvalResult objects to a pandas DataFrame.
     
