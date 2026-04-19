@@ -16,6 +16,7 @@ python src/agent.py
 import os
 import re
 import json
+import base64
 from typing import Annotated, Optional, TypedDict
 
 from dotenv import load_dotenv
@@ -31,13 +32,31 @@ load_dotenv()
 import warnings
 warnings.filterwarnings("ignore", message=".*position_ids.*")
 
-# LLM
+# LLM — text-only (routing and text generation)
 LLM_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 llm = ChatOllama(
     model=LLM_MODEL,
     base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-    num_predict=1024   
+    num_predict=1024,
 )
+
+# LLM — vision (cross_modal generation only)
+VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "llava")
+vision_llm = ChatOllama(
+    model=VISION_MODEL,
+    base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+    num_predict=1536,
+)
+
+
+def _encode_image_b64(image_path: str) -> str | None:
+    try:
+        with open(image_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except (FileNotFoundError, OSError) as e:
+        print(f"[generator] could not read image {image_path}: {e}")
+        return None
+
 
 # State
 class AgentState(TypedDict):
@@ -68,16 +87,8 @@ def memory_node(state: AgentState) -> AgentState:
     """
     Extract structured entities from the latest user message and update the
     claim draft. In a full production system this would use NER / slot filling.
-
-    Guard: skip extraction on the first turn of a conversation. With only one
-    message in state there is no prior context to cross-reference, and the
-    single-turn eval benchmark does not exercise this node. Entity extraction
-    runs from turn 2 onwards, where conversation history exists.
     """
-    if len(state.get("messages", [])) <= 1:
-        return state
-
-    last_message = state["messages"][-1] if state["messages"] else ""
+    last_message = state["messages"][-1] if state.get("messages") else ""
     content = last_message.content if hasattr(last_message, "content") else str(last_message)
  
     draft = state.get("claim_draft", {})
@@ -239,70 +250,102 @@ def retrieval_node(state: AgentState) -> AgentState:
  
  
 # Node 4 - Generator
- 
-SYSTEM_PROMPT = """You are an insurance claims assistant. Your job is to help users:
-1. Understand their insurance coverage
-2. File new claims step by step
-3. Check on existing claim status
-4. Assess whether damage is likely covered
- 
-RULES:
-- Always base your answers on the retrieved policy documents and claim records provided.
-- Cite specific policy sections when stating what is or isn't covered.
-- If information is not in the retrieved context, say so honestly — do NOT make up coverage decisions.
-- When helping file a claim, collect information progressively: incident type → date → description → damage details → supporting documents.
-- Be clear about what the user needs to do next.
-- Keep responses concise and actionable.
+
+VISION_SYSTEM_PROMPT = """You are an insurance claims assistant with vision capabilities.
+The user has uploaded a damage photo alongside their question.
+
+Answer in this order:
+1. DAMAGE: Name the exact component (e.g. "rear bumper", "roof tiles"), severity, and visible extent. No vague language.
+2. COVERAGE: Quote the relevant policy section title and number directly from the retrieved context. State covered or not covered based solely on that text.
+3. EXCESS: State the exact dollar amount from the retrieved context, or "not specified in retrieved policy" if absent.
+4. NEXT STEPS: List only the actions specific to this damage type and this policy.
+
+GROUNDING RULES — these override everything else:
+- Copy exact dollar amounts from context. Never calculate or estimate an amount not in the text.
+- If the relevant policy section is not in the retrieved context, say so: "No policy section for [topic] was retrieved."
+- If the image is unclear, say exactly that and ask for a retake — do not guess at damage.
+"""
+
+SYSTEM_PROMPT = """You are an insurance claims assistant. Use the retrieved POLICY, CLAIM, and DAMAGE context below to answer.
+
+GROUNDING RULES — these override all other instructions:
+- Quote dollar amounts (excess, limits, settlements) exactly as they appear in the retrieved context. Never calculate or substitute a different figure.
+- Quote claim status (approved/rejected/pending) exactly as it appears in the retrieved CLAIM record. Never infer status from partial information.
+- When listing exclusions or steps, include every item the context mentions for that topic — do not stop after two or three.
+- If a specific fact (amount, section number, status) is not in the retrieved context, say "not found in retrieved context" rather than supplying a value.
+
+RESPONSE FORMAT:
+
+Coverage question → one-line verdict (Covered / Not Covered / Partially covered) then cite the section title and number from context. List any applicable excess and exclusions found in context.
+
+Step-by-step question → numbered list of steps drawn from the retrieved policy for THIS incident type (motor/home/health/theft). Do not apply motor steps to home incidents or vice versa. Put the most time-critical step first.
+
+Claim status question → state the claim ID, status, and settlement amount verbatim from the retrieved CLAIM record. State the reason for the decision as given in the record.
+
+New claim intake → confirm what you have, then ask for exactly one missing field in this order: policy number → incident date/time → incident description → damage details → supporting documents.
 """
  
  
 def generator_node(state: AgentState) -> AgentState:
     """
     Produce a grounded answer using retrieved context and conversation history.
+    For cross_modal queries with a valid image, sends the image directly to LLaVA.
     """
-    retrieved = state.get("retrieved_docs", [])
+    retrieved   = state.get("retrieved_docs", [])
     claim_draft = state.get("claim_draft", {})
     query_type  = state.get("query_type", "conversational")
- 
-    # Build context block with per-source caps to prevent damage captions from
-    # crowding out policy chunks that carry the answer-relevant keywords.
-    # Total budget: 4 policy + 2 damage + 3 claims = 9 max (order: policy first).
+    image_path  = state.get("image_path")
+
+    # Build context block — 4 policy + 2 damage + 3 claims max (policy first).
     policy_docs = [d for d in retrieved if d.get("source") == "policy"][:4]
     damage_docs = [d for d in retrieved if d.get("source") == "damage"][:2]
     claims_docs = [d for d in retrieved if d.get("source") == "claims"][:3]
     capped = policy_docs + damage_docs + claims_docs
 
     context_parts = []
-    for i, doc in enumerate(capped):
+    for doc in capped:
         source  = doc["source"].upper()
         content = doc["content"]
         meta    = doc.get("metadata", {})
- 
+
         if source == "POLICY":
             label = f"[Policy — {meta.get('insurer', '')} {meta.get('insurance_type', '')} p.{meta.get('page_number', '?')}]"
         elif source == "DAMAGE":
             label = f"[Damage photo — {meta.get('damage_type', '')}]"
-        else:  # claims
+        else:
             label = f"[Claim {meta.get('claim_id', '')} — {meta.get('claim_status', '')}]"
- 
+
         context_parts.append(f"{label}\n{content}")
- 
+
     context_str = "\n\n---\n\n".join(context_parts) if context_parts else "No relevant documents found."
- 
-    # Include claim draft if one is in progress
+
     draft_str = ""
     if claim_draft and any(claim_draft.values()):
         draft_str = f"\n\nCURRENT CLAIM DRAFT (collected so far):\n{json.dumps(claim_draft, indent=2)}"
- 
-    # Build the full prompt
-    system = SystemMessage(content=SYSTEM_PROMPT)
-    context_msg = HumanMessage(content=f"RETRIEVED CONTEXT:\n\n{context_str}{draft_str}")
- 
-    # Include recent conversation (last 6 turns)
+
     recent_messages = state["messages"][-6:]
- 
+
+    # Vision path — send the actual image to LLaVA alongside policy context
+    if query_type == "cross_modal" and image_path:
+        image_b64 = _encode_image_b64(image_path)
+        if image_b64:
+            system = SystemMessage(content=VISION_SYSTEM_PROMPT)
+            context_msg = HumanMessage(content=[
+                {"type": "text", "text": f"RETRIEVED CONTEXT:\n\n{context_str}{draft_str}"},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
+            ])
+            response = vision_llm.invoke([system, context_msg] + recent_messages)
+            return {"messages": [response]}
+        # Image unreadable — fall through with a note prepended
+        context_str = (
+            "[Note: uploaded image could not be read. Responding from retrieved context only.]\n\n"
+            + context_str
+        )
+
+    # Text-only path
+    system      = SystemMessage(content=SYSTEM_PROMPT)
+    context_msg = HumanMessage(content=f"RETRIEVED CONTEXT:\n\n{context_str}{draft_str}")
     response = llm.invoke([system, context_msg] + recent_messages)
- 
     return {"messages": [response]}
  
 

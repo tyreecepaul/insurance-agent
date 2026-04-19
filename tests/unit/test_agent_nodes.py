@@ -7,7 +7,7 @@ Fast, isolated tests with mocked dependencies.
 import pytest
 from unittest.mock import patch, MagicMock
 from langchain_core.messages import HumanMessage, AIMessage
-from src.agent import memory_node, router_node
+from src.agent import memory_node, router_node, generator_node
 from src.eval import VARIANTS
 
 
@@ -431,3 +431,72 @@ class TestRouterNodeEdgeCases:
 
         # Assert
         assert result["query_type"] == "conversational"
+
+
+@pytest.mark.unit
+class TestGeneratorNodeVisionPath:
+    """Tests for generator_node cross_modal (LLaVA) path."""
+
+    @patch("src.agent._encode_image_b64", return_value="ZmFrZWltYWdl")
+    @patch("src.agent.vision_llm")
+    @patch("src.agent.llm")
+    def test_generator_uses_vision_llm_when_image_present(
+        self, mock_llm, mock_vision_llm, mock_encode
+    ):
+        """cross_modal query with a readable image should invoke vision_llm, not llm."""
+        mock_vision_llm.invoke.return_value = MagicMock(
+            content="I can see rear bumper damage. This appears to be covered."
+        )
+        state = _make_state(
+            "Is this damage covered?",
+            extra={
+                "query_type": "cross_modal",
+                "image_path": "/fake/path/damage.jpg",
+            },
+        )
+
+        result = generator_node(state)
+
+        mock_vision_llm.invoke.assert_called_once()
+        mock_llm.invoke.assert_not_called()
+        assert "messages" in result
+
+    @patch("src.agent._encode_image_b64", return_value=None)
+    @patch("src.agent.vision_llm")
+    @patch("src.agent.llm")
+    def test_generator_falls_back_to_text_llm_when_image_unreadable(
+        self, mock_llm, mock_vision_llm, mock_encode
+    ):
+        """If image encoding fails, generator must fall back to text-only llm."""
+        mock_llm.invoke.return_value = MagicMock(
+            content="Based on the retrieved context, here is what I found."
+        )
+        state = _make_state(
+            "Is this damage covered?",
+            extra={
+                "query_type": "cross_modal",
+                "image_path": "/nonexistent/damage.jpg",
+            },
+        )
+
+        result = generator_node(state)
+
+        mock_llm.invoke.assert_called_once()
+        mock_vision_llm.invoke.assert_not_called()
+        assert "messages" in result
+
+    @patch("src.agent.vision_llm")
+    @patch("src.agent.llm")
+    def test_generator_uses_text_llm_for_factual_query(self, mock_llm, mock_vision_llm):
+        """Factual query with no image must always use llm, never vision_llm."""
+        mock_llm.invoke.return_value = MagicMock(content="The excess is $750.")
+        state = _make_state(
+            "What is my excess?",
+            extra={"query_type": "factual", "image_path": None},
+        )
+
+        result = generator_node(state)
+
+        mock_llm.invoke.assert_called_once()
+        mock_vision_llm.invoke.assert_not_called()
+        assert "messages" in result

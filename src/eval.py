@@ -32,8 +32,11 @@ import mlflow
 import pandas as pd
 import ollama
 from dotenv import load_dotenv
+from pyspark.sql import SparkSession, Row
+from pyspark.sql.types import StructType, StructField, StringType, FloatType, IntegerType
 
 from src.tools import search_policy, search_damage, search_claims
+from src.agent import SYSTEM_PROMPT as AGENT_SYSTEM_PROMPT
 
 load_dotenv()
 
@@ -391,11 +394,7 @@ def run_agent_query(
             for r in search_claims(query, top_k=5):
                 context_parts.append(f"[CLAIM {r.metadata.get('claim_id','')}] {r.content[:300]}")
 
-    system = (
-        "You are an insurance claims assistant. Answer using the provided context. "
-        "Cite specific policy sections or claim IDs where relevant. "
-        "If context is absent, answer from general knowledge but say so."
-    )
+    system = AGENT_SYSTEM_PROMPT
     context_str = "\n\n".join(context_parts) if context_parts else "(no retrieved context)"
     user_msg = f"CONTEXT:\n{context_str}\n\nQUESTION: {query}"
 
@@ -521,6 +520,48 @@ def aggregate_results(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.
     )
 
     return variant_summary, family_breakdown, cross_modal_gap
+
+
+def build_spark_df(results: list[EvalResult], spark_session: SparkSession) -> pd.DataFrame:
+    """
+    Convert a list of EvalResult objects to a Spark DataFrame, then back to pandas.
+    
+    This function accepts EvalResult dataclass instances and converts them to a
+    Spark DataFrame with proper schema, then converts to pandas for compatibility
+    with the existing aggregate_results function.
+    
+    Args:
+        results: List of EvalResult dataclass instances
+        spark_session: Active Spark session
+    
+    Returns:
+        pandas DataFrame with columns matching EvalResult fields
+    """
+    # Define Spark schema matching EvalResult fields
+    schema = StructType([
+        StructField("test_id", StringType(), False),
+        StructField("family", StringType(), False),
+        StructField("variant_key", StringType(), False),
+        StructField("variant_name", StringType(), False),
+        StructField("query", StringType(), False),
+        StructField("response", StringType(), False),
+        StructField("latency_ms", FloatType(), False),
+        StructField("input_tokens", IntegerType(), False),
+        StructField("output_tokens", IntegerType(), False),
+        StructField("total_tokens", IntegerType(), False),
+        StructField("recall_at_5", FloatType(), False),
+        StructField("judge_score", IntegerType(), False),
+        StructField("judge_reason", StringType(), False),
+    ])
+    
+    # Convert EvalResult dataclass instances to Row objects
+    rows = [Row(**asdict(result)) for result in results]
+    
+    # Create Spark DataFrame from rows with schema
+    spark_df = spark_session.createDataFrame(rows, schema=schema)
+    
+    # Convert to pandas for use with existing aggregate_results function
+    return spark_df.toPandas()
 
 
 def _print_table(title: str, df: pd.DataFrame) -> None:
