@@ -280,6 +280,7 @@ def mock_claims_results():
 @pytest.fixture(scope="session")
 def spark_session():
     """Create a single SparkSession for all tests. Reused across tests."""
+    pytest.importorskip("pyspark", minversion=None)  # Skip if pyspark not available
     from pyspark.sql import SparkSession
     
     spark = (

@@ -260,14 +260,18 @@ def _get_blip2():
     try:
         from transformers import Blip2Processor, Blip2ForConditionalGeneration
 
-        processor = Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-sm")
-        blip_model = Blip2ForConditionalGeneration.from_pretrained(
-            "Salesforce/blip2-flan-t5-sm",
-            torch_dtype=torch.float16,
-            device_map="auto",
-            load_in_8bit=True,
-        )
+        # Use blip2-opt-2.7b which is more stable and widely available than flan-t5-sm
+        model_name = "Salesforce/blip2-opt-2.7b"
+        # use_fast=False to avoid breaking changes in image processor
+        processor = Blip2Processor.from_pretrained(model_name, use_fast=False)
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Gate float16 on CUDA; CPU-only envs must use float32 to avoid dtype/device mismatch
+        torch_dtype = torch.float16 if device == "cuda" else torch.float32
+        # BLIP-2 doesn't support load_in_8bit; use basic initialization
+        blip_model = Blip2ForConditionalGeneration.from_pretrained(
+            model_name,
+            torch_dtype=torch_dtype,
+        )
         blip_model = blip_model.to(device)
         _BLIP2 = (processor, blip_model, device)
         return _BLIP2
@@ -343,11 +347,17 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
     """
     Index all damage photos into ChromaDB collection.
     
-    Processes all images in DAMAGE_DIR by:
+    Processes all images in DAMAGE_DIR (recursively) by:
       1. Generating CLIP embeddings for vision-based similarity search
       2. Creating natural language captions using BLIP-2 (or filename fallback)
       3. Classifying damage type and insurance category from filename
-      4. Storing results in the "damage_index" ChromaDB collection
+      4. Capturing event-stage (pre-event/post-event) from directory structure
+      5. Storing results in the "damage_index" ChromaDB collection
+    
+    Supports nested directory structures like:
+      - data/damage_photos/vehicle/*.jpg
+      - data/damage_photos/property/pre-event/*.jpg
+      - data/damage_photos/property/post-event/*.jpg
     
     Skips images that have already been indexed.
     
@@ -364,7 +374,8 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
     existing = set(collection.get()["ids"])
  
     img_extensions = {".jpg", ".jpeg", ".png", ".webp"}
-    images = [p for p in DAMAGE_DIR.iterdir() if p.suffix.lower() in img_extensions]
+    # Recursively find all images in DAMAGE_DIR and subdirectories
+    images = sorted([p for p in DAMAGE_DIR.rglob("*") if p.suffix.lower() in img_extensions])
  
     if not images:
         print("   No images found in data/damage_photos/ — add damage photos and re-run.")
@@ -378,7 +389,8 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
     # No need to pre-load here; the cache ensures "load once, reuse" behavior.
 
     for img_path in tqdm(images, desc="Images"):
-        doc_id = img_path.stem
+        # Use relative path to ensure uniqueness across subdirectories (vehicle/car_01.jpg vs property/car_01.jpg)
+        doc_id = str(img_path.relative_to(DAMAGE_DIR)).replace("\\", "/").replace(".", "_")
         if doc_id in existing:
             continue
 
@@ -395,6 +407,9 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
         # Infer damage type from filename convention:
         # e.g. "car_rear_dent_01.jpg" → damage_type="car", severity="medium"
         damage_type, insurance_category = _classify_damage_from_filename(img_path.stem)
+        
+        # Capture event-stage from directory structure (pre-event, post-event, or generic)
+        event_stage = _extract_event_stage_from_path(img_path)
  
         collection.add(
             ids=[doc_id],
@@ -406,6 +421,7 @@ def ingest_damage_photos(client: chromadb.PersistentClient):
                 "damage_type":        damage_type,
                 "insurance_category": insurance_category,
                 "filename":           img_path.name,
+                "event_stage":        event_stage,
             }],
         )
  
@@ -439,6 +455,32 @@ def _classify_damage_from_filename(stem: str) -> tuple[str, str]:
     if any(w in stem for w in ["fire", "smoke", "burn"]):
         return "fire damage", "home"
     return "general damage", "general"
+
+
+def _extract_event_stage_from_path(img_path: Path) -> str:
+    """
+    Extract event-stage (pre-event or post-event) from file path structure.
+    
+    Checks if the image is in a pre-event or post-event subdirectory.
+    Supports structures like:
+      - data/damage_photos/property/pre-event/image.jpg → "pre-event"
+      - data/damage_photos/property/post-event/image.jpg → "post-event"
+      - data/damage_photos/vehicle/image.jpg → "generic"
+    
+    Args:
+        img_path: Path object pointing to the image file.
+    
+    Returns:
+        str: Event stage ("pre-event", "post-event", or "generic" for unspecified).
+    """
+    # Convert to string and check path components
+    path_str = str(img_path).lower()
+    if "pre-event" in path_str or "pre_event" in path_str:
+        return "pre-event"
+    elif "post-event" in path_str or "post_event" in path_str:
+        return "post-event"
+    else:
+        return "generic"
 
 
 ### Claims Index

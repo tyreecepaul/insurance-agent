@@ -16,6 +16,8 @@ Usage:
     mlflow ui                                    # view results at localhost:5000
 """
 
+from __future__ import annotations
+
 import os
 import sys
 
@@ -34,6 +36,7 @@ import ollama
 from dotenv import load_dotenv
 
 from src.tools import search_policy, search_damage, search_claims
+from src.agent import SYSTEM_PROMPT as AGENT_SYSTEM_PROMPT
 
 load_dotenv()
 
@@ -276,6 +279,220 @@ BENCHMARK: list[dict] = [
         # is a substring of both "receipt" and "receipts".
         "keywords": ["POL-HOME-2871", "tarp", "emergency", "receipt", "covered", "assess"],
     },
+
+    # ── Additional Factual Cases (Policy Details) ──────────────────────────
+    {
+        "id": "F1-04",
+        "family": "factual",
+        "query": "Are rental cars covered under my motor insurance policy while mine is being repaired?",
+        "ground_truth": "Rental car cover is available as an optional extra. If included, it covers hire car costs up to a daily limit while your vehicle is being repaired after a covered claim.",
+        "expected_source": "policy",
+        "keywords": ["rental", "hire car", "covered", "daily limit", "repair"],
+    },
+    {
+        "id": "F1-05",
+        "family": "factual",
+        "query": "What is the maximum benefit for loss of income in my income protection insurance?",
+        "ground_truth": "Income protection replaces up to 75% of your gross weekly income, subject to the waiting period (usually 14 or 30 days) and benefit period (2 years or to age 65, whichever is earlier).",
+        "expected_source": "policy",
+        "keywords": ["income", "75%", "weekly", "waiting period", "benefit"],
+    },
+    {
+        "id": "F1-06",
+        "family": "factual",
+        "query": "Is repatriation from overseas covered if I fall ill while traveling?",
+        "ground_truth": "Travel insurance includes repatriation cover for emergency medical evacuation and return to your home country. This covers air ambulance, medical escort, and commercial flights home if hospitalised.",
+        "expected_source": "policy",
+        "keywords": ["repatriation", "overseas", "evacuation", "ambulance", "hospitali"],
+    },
+    {
+        "id": "F1-07",
+        "family": "factual",
+        "query": "What is the deductible for contents insurance if I make a claim?",
+        "ground_truth": "Standard contents deductible is $250 per claim. A higher voluntary deductible (e.g. $500 or $1000) may reduce your premium but increases your out-of-pocket cost when you claim.",
+        "expected_source": "policy",
+        "keywords": ["deductible", "250", "voluntary", "claim", "premium"],
+    },
+    {
+        "id": "F1-08",
+        "family": "factual",
+        "query": "Is theft of items from my car covered under home contents insurance?",
+        "ground_truth": "Items stolen from a locked vehicle may be covered under your home contents or personal property cover, but your car insurance excess applies. Items should be insured for their full replacement value.",
+        "expected_source": "policy",
+        "keywords": ["theft", "car", "vehicle", "contents", "locked", "excess"],
+    },
+
+    # ── Additional Cross-Modal Cases (Damage Assessment) ───────────────────
+    {
+        "id": "F2-05",
+        "family": "cross_modal",
+        "query": "I have a photo of a large dent in my car door after it was struck in a car park. Is this covered by my insurance?",
+        "ground_truth": "Door dent damage is covered under comprehensive motor insurance. Repair costs are covered minus the excess, and paintwork damage from the impact is also included.",
+        "expected_source": "damage",
+        "keywords": ["dent", "door", "comprehensive", "paintwork", "repair", "excess"],
+    },
+    {
+        "id": "F2-06",
+        "family": "cross_modal",
+        "query": "Here's a photo of my fence that was blown over in last night's storm. Will home insurance pay to rebuild it?",
+        "ground_truth": "Damage to fencing from storms is typically covered under home building insurance. The cost to rebuild is covered minus the excess, depending on your specific policy wording.",
+        "expected_source": "damage",
+        "keywords": ["fence", "storm", "rebuild", "building", "covered", "excess"],
+    },
+    {
+        "id": "F2-07",
+        "family": "cross_modal",
+        "query": "I'm attaching a photo of my laptop that was damaged when I spilled coffee on it. Is accidental damage covered?",
+        "ground_truth": "Accidental damage coverage is optional and must be added to your home contents policy. With this cover, spill damage to electronics like laptops is covered minus the excess.",
+        "expected_source": "damage",
+        "keywords": ["accidental damage", "laptop", "spill", "covered", "optional", "excess"],
+    },
+    {
+        "id": "F2-08",
+        "family": "cross_modal",
+        "query": "This photo shows my home office equipment including computer, printer and desk. If there's a house fire, will all of this be covered?",
+        "ground_truth": "Office equipment is covered under home contents insurance, including computer, printer, furniture and other business items, subject to any work-use exclusions or limits specified in your policy.",
+        "expected_source": "damage",
+        "keywords": ["office", "equipment", "fire", "contents", "computer", "covered"],
+    },
+
+    # ── Additional Analytical Cases (Procedures) ──────────────────────────
+    {
+        "id": "F3-06",
+        "family": "analytical",
+        "query": "My car was parked and hit by another vehicle that didn't stop. How should I proceed?",
+        "ground_truth": "Steps: 1. Take photos of damage and note time 2. Find witness contact details if possible 3. Report to police (hit-and-run) 4. Contact your insurer within 24h 5. Provide claim reference from police 6. Obtain repair quote.",
+        "expected_source": "policy",
+        "keywords": ["hit-and-run", "photo", "witness", "police", "claim", "repair"],
+    },
+    {
+        "id": "F3-07",
+        "family": "analytical",
+        "query": "What should I do immediately after a motor vehicle accident to protect my claim?",
+        "ground_truth": "Immediate steps: 1. Ensure safety (move to safe location if possible) 2. Call police if injuries 3. Exchange details with other drivers 4. Take photos of all damage 5. Get contact details of witnesses 6. Note exact location and time 7. Don't admit liability.",
+        "expected_source": "policy",
+        "keywords": ["accident", "safety", "police", "exchange", "photo", "witnesses", "liability"],
+    },
+    {
+        "id": "F3-08",
+        "family": "analytical",
+        "query": "How do I claim for medical expenses I incurred due to an accident?",
+        "ground_truth": "Steps: 1. Obtain itemised invoices from all healthcare providers 2. Collect receipts for medications and equipment 3. Request medical reports from treating doctors 4. Submit all documents with claim form 5. Include any gap insurance receipts 6. Allow 4-6 weeks for assessment.",
+        "expected_source": "policy",
+        "keywords": ["medical", "invoice", "receipt", "doctor", "report", "claim form", "weeks"],
+    },
+    {
+        "id": "F3-09",
+        "family": "analytical",
+        "query": "What is the process for disputing a claim rejection by my insurer?",
+        "ground_truth": "Dispute process: 1. Request written explanation of rejection 2. Review policy wording and assessment 3. Gather supporting evidence 4. Lodge written complaint with insurer 5. If unresolved, refer to Insurance Ombudsman 6. Provide all documents and correspondence.",
+        "expected_source": "policy",
+        "keywords": ["dispute", "rejection", "complaint", "ombudsman", "evidence", "written"],
+    },
+
+    # ── Additional Conversational Cases (Claim Status & Interaction) ──────
+    {
+        "id": "F4-05",
+        "family": "conversational",
+        "query": "I'm Alex Park, and I need to check on my motor insurance claim that I submitted two weeks ago.",
+        "ground_truth": "To locate your claim, I need your policy number and the claim reference provided when you lodged it. Typical processing time is 4-8 weeks depending on complexity. Once I have these details, I can advise on your claim status.",
+        "expected_source": "claims",
+        "keywords": ["policy", "claim reference", "processing", "status", "weeks"],
+    },
+    {
+        "id": "F4-06",
+        "family": "conversational",
+        "query": "How long does it usually take to settle a home contents insurance claim?",
+        "ground_truth": "Simple contents claims typically settle in 3-5 business days. More complex claims with assessments may take 2-4 weeks. Emergency advance payments can be arranged for urgent needs while claim is being assessed.",
+        "expected_source": "claims",
+        "keywords": ["settle", "contents", "days", "weeks", "assess", "advance"],
+    },
+    {
+        "id": "F4-07",
+        "family": "conversational",
+        "query": "My claim was approved. What happens next and when will I get paid?",
+        "ground_truth": "After approval: 1. Settlement amount is confirmed 2. Payment is processed to your nominated bank account 3. Direct bank transfer typically takes 2-3 business days 4. You'll receive settlement letter and receipt via post or email.",
+        "expected_source": "claims",
+        "keywords": ["approved", "settlement", "payment", "bank", "transfer", "business days"],
+    },
+    {
+        "id": "F4-08",
+        "family": "conversational",
+        "query": "Can I appoint a lawyer or representative to handle my claim?",
+        "ground_truth": "Yes. You can appoint a lawyer, loss adjuster, or claims agent to represent you. Provide a signed letter of authority to your representative and forward it to the insurer. Their fees may be claimed back as part of your settlement.",
+        "expected_source": "claims",
+        "keywords": ["lawyer", "representative", "authority", "adjuster", "settlement"],
+    },
+    {
+        "id": "F4-09",
+        "family": "conversational",
+        "query": "I disagree with the damage assessment on my car repair claim. What can I do?",
+        "ground_truth": "If you disagree with the repair quote: 1. Obtain independent assessment from another repairer 2. Submit the alternative quote to your insurer 3. Insurer will review both quotes 4. If values differ significantly, an umpire may be appointed. You can also lodge a formal dispute.",
+        "expected_source": "claims",
+        "keywords": ["assessment", "quote", "independent", "umpire", "dispute", "repairer"],
+    },
+
+    # ── Additional Multi-Turn Cases (Conversation Continuations) ───────────
+    {
+        "id": "MT-03",
+        "family": "multi_turn",
+        "prior_turns": [
+            {
+                "role": "user",
+                "content": (
+                    "Hi, I've had a car accident. I have motor policy POL-MOTOR-5543. "
+                    "Another driver was fully at fault."
+                ),
+            },
+            {
+                "role": "assistant",
+                "content": (
+                    "I'm sorry to hear about your accident. I've noted your motor policy "
+                    "POL-MOTOR-5543 and that the other driver was at fault. I'll help you "
+                    "lodge a claim. Do you have the other driver's insurance details?"
+                ),
+            },
+        ],
+        "query": "Yes, I have their insurer details. Can I claim directly from their insurance instead of mine?",
+        "ground_truth": (
+            "Yes, you can lodge a third-party claim directly with the at-fault driver's "
+            "insurer. However, claiming through your own insurer (POL-MOTOR-5543) may be "
+            "faster as they handle all communication. Your insurer will recover the cost "
+            "from the third party, so you won't pay your excess."
+        ),
+        "expected_source": "claims",
+        "keywords": ["third-party", "insurer", "claim", "excess", "recover", "at-fault"],
+    },
+    {
+        "id": "MT-04",
+        "family": "multi_turn",
+        "prior_turns": [
+            {
+                "role": "user",
+                "content": (
+                    "I have health insurance with HealthCare Plus. I need a knee surgery "
+                    "that my doctor recommended. My policy is POL-HEALTH-7821."
+                ),
+            },
+            {
+                "role": "assistant",
+                "content": (
+                    "I've noted your health policy POL-HEALTH-7821. Before you book the "
+                    "surgery, I recommend checking hospital accreditation and obtaining "
+                    "pre-approval. Have you chosen a hospital yet?"
+                ),
+            },
+        ],
+        "query": "The doctor recommended the hospital, but it's quite expensive. Can I choose a different hospital to save money?",
+        "ground_truth": (
+            "Yes, under your POL-HEALTH-7821 you can choose any hospital in the fund's "
+            "network to potentially reduce costs. However, verify that: 1) The surgeon is "
+            "on your fund's list 2) The new hospital is accredited 3) Anaesthetist and "
+            "hospital theatre fees are covered. Compare quotes between network hospitals."
+        ),
+        "expected_source": "claims",
+        "keywords": ["hospital", "network", "surgeon", "fund", "accredited", "quote", "costs"],
+    },
 ]
 
 
@@ -391,11 +608,7 @@ def run_agent_query(
             for r in search_claims(query, top_k=5):
                 context_parts.append(f"[CLAIM {r.metadata.get('claim_id','')}] {r.content[:300]}")
 
-    system = (
-        "You are an insurance claims assistant. Answer using the provided context. "
-        "Cite specific policy sections or claim IDs where relevant. "
-        "If context is absent, answer from general knowledge but say so."
-    )
+    system = AGENT_SYSTEM_PROMPT
     context_str = "\n\n".join(context_parts) if context_parts else "(no retrieved context)"
     user_msg = f"CONTEXT:\n{context_str}\n\nQUESTION: {query}"
 
@@ -521,6 +734,24 @@ def aggregate_results(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.
     )
 
     return variant_summary, family_breakdown, cross_modal_gap
+
+
+def build_spark_df(results: list[EvalResult]) -> pd.DataFrame:
+    """
+    Convert a list of EvalResult objects to a pandas DataFrame.
+    
+    Note: Despite the function name 'build_spark_df', it directly creates a pandas
+    DataFrame to avoid unnecessary Spark round-tripping. Spark conversion can be
+    done at call sites if needed using spark_session.createDataFrame(df).
+    
+    Args:
+        results: List of EvalResult dataclass instances
+        spark_session: Active Spark session (optional for future use)
+    
+    Returns:
+        pandas DataFrame with columns matching EvalResult fields
+    """
+    return pd.DataFrame([asdict(result) for result in results])
 
 
 def _print_table(title: str, df: pd.DataFrame) -> None:

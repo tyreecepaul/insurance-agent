@@ -75,9 +75,9 @@ class TestIngestPolicies:
                 
                 ingest_policies(mock_client, mock_model)
                 
-                # Should print "No PDFs found" message
+                # Should print "No policy documents found" message
                 captured = capsys.readouterr()
-                assert "No PDFs found" in captured.out
+                assert "No policy documents found" in captured.out
 
 
 @pytest.mark.integration

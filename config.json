@@ -8,5 +8,6 @@
   "CHUNK_OVERLAP": 50,
   "POLICY_DIR": "data/policy_docs",
   "DAMAGE_DIR": "data/damage_photos",
-  "CLAIMS_FILE": "data/claims_data/claims.json"
+  "CLAIMS_FILE": "data/claims_data/claims.json",
+  "OLLAMA_VISION_MODEL": "llava"
 }

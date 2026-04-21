@@ -329,7 +329,6 @@ class TestRunEvaluationLoop:
     """HIGH – Bug 1: return + spark.stop() inside variant loop causes early exit."""
 
     @patch("src.eval.mlflow")
-    @patch("src.eval.get_spark")
     @patch("src.eval.aggregate_results")
     @patch("src.eval.build_spark_df")
     @patch("src.eval.log_variant_to_mlflow")
@@ -340,7 +339,7 @@ class TestRunEvaluationLoop:
     def test_run_evaluation_processes_all_variants_when_no_filter(
         self,
         mock_claims, mock_damage, mock_policy, mock_ollama,
-        mock_log_mlflow, mock_build_df, mock_aggregate, mock_get_spark, mock_mlflow,
+        mock_log_mlflow, mock_build_df, mock_aggregate, mock_mlflow,
     ):
         """
         HIGH - eval.py: return statement inside variant loop exits after the first
@@ -357,7 +356,6 @@ class TestRunEvaluationLoop:
         mock_df.coalesce.return_value.write.mode.return_value.parquet = MagicMock()
         mock_spark_session = MagicMock()
         mock_spark_session.createDataFrame.return_value = mock_df
-        mock_get_spark.return_value = mock_spark_session
         mock_build_df.return_value = mock_df
 
         # aggregate_results returns three DataFrames

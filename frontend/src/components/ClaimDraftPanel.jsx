@@ -6,7 +6,20 @@ export default function ClaimDraftPanel({ sessionId, claimDraft, onUpdate }) {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState(claimDraft || {});
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      await api.exportClaimDraft(sessionId);
+    } catch (err) {
+      setError(`Export failed: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Update form when claimDraft prop changes
   React.useEffect(() => {
@@ -52,11 +65,20 @@ export default function ClaimDraftPanel({ sessionId, claimDraft, onUpdate }) {
     <div className="claim-draft-panel">
       <div className="panel-header">
         <h2>Claim Draft</h2>
-        {!editMode && (
-          <button onClick={() => setEditMode(true)} className="edit-button">
-            Edit
+        <div className="panel-header-actions">
+          {!editMode && (
+            <button onClick={() => setEditMode(true)} className="edit-button">
+              Edit
+            </button>
+          )}
+          <button
+            onClick={handleExport}
+            disabled={exporting || Object.keys(formData).length === 0}
+            className="export-button"
+          >
+            {exporting ? 'Exporting...' : 'Export JSON'}
           </button>
-        )}
+        </div>
       </div>
 
       {error && (
