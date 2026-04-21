@@ -48,6 +48,25 @@ export const api = {
       claim_draft: claimDraft
     }),
 
+  exportClaimDraft: async (sessionId) => {
+    const base = API_BASE_URL || '';
+    const response = await fetch(`${base}/api/claim-draft/export?session_id=${encodeURIComponent(sessionId)}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || `Export failed (${response.status})`);
+    }
+    const disposition = response.headers.get('content-disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `claim_${sessionId.slice(0, 8)}.json`;
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  },
+
   // Image Upload
   uploadImage: async (sessionId, file) => {
     const formData = new FormData();

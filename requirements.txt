@@ -26,10 +26,11 @@ tqdm>=4.66.0                     # progress bars during indexing
 numpy>=1.26.0
 pydantic>=2.0.0                  # data validation for claim records
 
-# eval
+# eval & training
 langchain-ollama>=0.2.0          # LLM-as-judge calls
 pandas>=2.0.0                    # results aggregation (replaces PySpark for local runs)
 mlflow>=2.13.0                   # experiment tracking + UI at localhost:5000
+datasets>=2.19.0                 # HuggingFace Dataset for embedding fine-tuning
 
 # sql analytics
 duckdb>=0.10.0                   # in-process SQL over claims JSON (analytics.py)

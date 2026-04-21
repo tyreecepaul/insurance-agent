@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage
 
@@ -455,6 +455,39 @@ def create_app() -> FastAPI:
         )
     
     
+    @app.get("/api/claim-draft/export")
+    def export_claim_draft(session_id: str) -> Response:
+        """
+        Download the current claim draft as a formatted JSON file.
+
+        Returns the full claim draft from agent session memory, enriched with
+        export metadata (timestamp, session ID, claim reference). The response
+        triggers a file download in the browser via Content-Disposition.
+        """
+        import json as _json
+
+        claim_draft = manager.get_claim_draft(session_id)
+        if not claim_draft or not any(claim_draft.values()):
+            raise HTTPException(status_code=404, detail="No claim data to export for this session.")
+
+        export_ts = datetime.now(timezone.utc).isoformat()
+        claim_ref = claim_draft.get("claim_reference") or f"DRAFT-{session_id[:8].upper()}"
+        filename = f"claim_{claim_ref}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+        payload = {
+            "claim_reference": claim_ref,
+            "export_timestamp": export_ts,
+            "session_id": session_id,
+            "claim_draft": claim_draft,
+        }
+
+        return Response(
+            content=_json.dumps(payload, indent=2),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+
     @app.put("/api/claim-draft", response_model=ClaimDraftResponse)
     def update_claim_draft(request: ClaimDraftRequest) -> ClaimDraftResponse:
         """Update claim draft with user-provided fields."""

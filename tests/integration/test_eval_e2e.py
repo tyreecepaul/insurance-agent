@@ -109,7 +109,7 @@ class TestEvalDataFrame:
         
         df = build_spark_df(results, spark_session)
         
-        assert len(df) == 2  # pandas DataFrame uses len(), not count()
+        assert len(df) ==  2
         assert len(df.columns) == 13
     
     def test_aggregate_results(self, spark_session):
